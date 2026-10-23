@@ -12,11 +12,18 @@ export function useRecorder(onDone: (file: File) => void) {
   let audio: AudioContext | null = null;
   let timer: ReturnType<typeof setInterval> | undefined;
   let frame = 0;
+  let generation = 0;
 
   const supported = computed(() => import.meta.client && "MediaRecorder" in window && !!navigator.mediaDevices?.getUserMedia);
 
   async function start() {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const attempt = ++generation;
+    const acquired = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (attempt !== generation) {
+      acquired.getTracks().forEach((track) => track.stop());
+      return;
+    }
+    stream = acquired;
     const mimeType = ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"].find((t) => MediaRecorder.isTypeSupported(t));
     recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
     const chunks: Blob[] = [];
@@ -60,6 +67,7 @@ export function useRecorder(onDone: (file: File) => void) {
   }
 
   function cancel() {
+    generation++;
     if (recorder) recorder.onstop = null;
     stop();
     cleanup();

@@ -2,25 +2,42 @@
 const props = defineProps<{ version: string; tier?: number }>();
 const { toast } = useToast();
 const open = ref(false);
-
-// Drift: from tier 1 the version number glitches for a moment every few seconds ("26.11.2█").
 const glitched = ref<string | null>(null);
 let timer: ReturnType<typeof setTimeout> | undefined;
+let resetTimer: ReturnType<typeof setTimeout> | undefined;
+let motion: MediaQueryList | undefined;
+let mounted = false;
+
 function scheduleGlitch() {
-  const tier = props.tier ?? 0;
+  clearTimeout(timer);
+  clearTimeout(resetTimer);
+  glitched.value = null;
+  if (!mounted || !props.tier || motion?.matches || document.hidden) return;
+  const interval = props.tier >= 3 ? 1800 : props.tier === 2 ? 4500 : 9000;
   timer = setTimeout(() => {
-    if ((props.tier ?? 0) >= 1) {
-      const chars = [...props.version];
-      const i = Math.floor(Math.random() * chars.length);
-      chars[i] = Math.random() < 0.6 ? "█" : "▓▒░#%"[Math.floor(Math.random() * 5)]!;
-      glitched.value = chars.join("");
-      setTimeout(() => (glitched.value = null), 120 + Math.random() * 180);
-    }
-    scheduleGlitch();
-  }, (tier >= 3 ? 1200 : tier === 2 ? 2500 : 5000) * (0.5 + Math.random()));
+    const chars = [...props.version];
+    const position = Math.floor(Math.random() * chars.length);
+    chars[position] = "█▓▒░#%"[Math.floor(Math.random() * 6)]!;
+    glitched.value = chars.join("");
+    resetTimer = setTimeout(scheduleGlitch, 90 + Math.random() * 150);
+  }, interval * (0.5 + Math.random()));
 }
-onMounted(scheduleGlitch);
-onBeforeUnmount(() => clearTimeout(timer));
+
+watch(() => props.tier, scheduleGlitch);
+onMounted(() => {
+  mounted = true;
+  motion = matchMedia("(prefers-reduced-motion: reduce)");
+  motion.addEventListener("change", scheduleGlitch);
+  document.addEventListener("visibilitychange", scheduleGlitch);
+  scheduleGlitch();
+});
+onBeforeUnmount(() => {
+  mounted = false;
+  clearTimeout(timer);
+  clearTimeout(resetTimer);
+  motion?.removeEventListener("change", scheduleGlitch);
+  document.removeEventListener("visibilitychange", scheduleGlitch);
+});
 
 const models = [
   { name: "FunGPT 26.11", note: "Great for most secrets", current: true },
@@ -39,11 +56,11 @@ function choose(m: (typeof models)[number]) {
   <div class="relative">
     <button
       type="button"
-      class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-lg font-medium transition hover:bg-ink-800 active:scale-95"
+      class="flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-sans text-lg font-medium tracking-normal whitespace-nowrap transition hover:bg-ink-800 active:scale-95"
       :class="(tier ?? 0) >= 3 && 'rgb-split'"
       @click="open = !open"
     >
-      FunGPT <span class="text-ink-500 tabular-nums" :class="glitched && 'text-red-400'">{{ glitched ?? version }}</span>
+      <span><HauntedText text="FunGPT" /> <span class="text-ink-300" :class="glitched && 'text-red-400'">{{ glitched ?? version }}</span></span>
       <Icon name="chevron-down" :size="16" class="text-ink-500" />
     </button>
 

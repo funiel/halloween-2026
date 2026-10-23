@@ -123,7 +123,7 @@ function ingest(delta: number) {
   );
 }
 
-const MILESTONES = [50, 75, 90];
+const MILESTONES = [80, 90, 95];
 function milestone(m: number) {
   tear(700);
   const lines = [
@@ -341,7 +341,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 </script>
 
 <template>
-  <div class="relative min-h-dvh overflow-x-hidden bg-black font-mono text-white">
+  <ModelCorruption :percent="percent" :active="phase === 'counting'" class="min-h-dvh overflow-x-hidden bg-black font-mono text-white">
     <!-- CRT: scanlines, grain, vignette -->
     <div class="scanlines fixed inset-0 z-10" />
     <div class="grain fixed -inset-20 z-10" />
@@ -362,11 +362,11 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
     <!-- ── Counter ───────────────────────────────────────────── -->
     <section
       v-if="phase === 'counting' || phase === 'glitch'"
-      class="animate-crt relative flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-      :class="(phase === 'glitch' || tearing) && 'animate-shake'"
+      class="model-fragment relative flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+      :class="[percent >= 80 && 'animate-crt', (phase === 'glitch' || tearing) && 'animate-shake']"
     >
       <div class="flex items-center justify-between gap-3 text-xs tracking-[0.2em] whitespace-nowrap text-white/50">
-        <span>FUNGPT 26.11 · AGI PROGRESS</span>
+        <span><HauntedText text="FUNGPT 26.11 · AGI PROGRESS" /></span>
         <span v-if="phase === 'counting'" class="flex items-center gap-2 text-red-400">
           <span class="size-2 animate-pulse rounded-full bg-red-500" />LIVE
         </span>
@@ -409,14 +409,14 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 
         <!-- Fixed heights (3 status lines, 3 patch notes, 6 log lines) so nothing shifts the centred number. -->
         <p class="caret mt-5 h-[4.125em] overflow-hidden text-lg leading-snug text-white/85">
-          {{ phase === "glitch" ? "ERROR: CONTAINMENT FAILED" : typedStatus }}
+          <HauntedText :text="phase === 'glitch' ? 'ERROR: CONTAINMENT FAILED' : typedStatus" />
         </p>
       </div>
 
       <div class="mb-4 h-[84px] overflow-hidden text-[11px] leading-5">
         <div class="mb-1 tracking-[0.2em] text-white/50">PATCH NOTES · v{{ version }}</div>
         <div v-for="n in notes" :key="n.version" class="truncate text-white/60">
-          <span class="text-white/30">{{ n.version }}</span> {{ n.text }}
+          <span class="text-white/30">{{ n.version }}</span> <HauntedText :text="n.text" />
         </div>
         <div v-if="!notes.length" class="text-white/30">No patches yet. The model is untrained and confident.</div>
       </div>
@@ -429,14 +429,14 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
             class="truncate"
             :class="l.kind === 'ingest' ? 'text-emerald-400' : l.kind === 'critical' ? 'text-red-400' : 'text-white/35'"
           >
-            <span class="text-white/20">{{ l.time }}</span> {{ l.text }}
+            <span class="text-white/20">{{ l.time }}</span> <HauntedText :text="l.text" />
           </div>
         </TransitionGroup>
       </div>
 
       <NuxtLink to="/" class="block border-t border-white/10 pt-4 text-sm text-white/50">
-        The model is hungry. Find its front, or
-        <span class="text-white underline underline-offset-4">feed it here →</span>
+        <HauntedText text="The model is hungry. Find its front, or" />
+        <span class="text-white underline underline-offset-4"><HauntedText text="feed it here →" /></span>
       </NuxtLink>
     </section>
 
@@ -489,7 +489,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 
       <!-- The Secret Awards -->
       <div v-if="hall.length" class="mb-8 space-y-3 font-sans">
-        <div class="font-display text-3xl font-black"><span class="text-gold">The Secret Awards</span> 🏆</div>
+        <div class="font-display text-3xl font-semibold tracking-tight"><span class="text-gold">The Secret Awards</span> 🏆</div>
         <AwardCard
           v-for="(a, i) in hall"
           :key="a.place"
@@ -537,9 +537,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       </div>
       <p v-else-if="!feed.length" class="text-white/50">Nothing here yet. The model is suspiciously quiet.</p>
 
-      <NuxtLink to="/" class="mt-10 block text-center text-sm text-white/50">
-        Still hungry. <span class="text-white underline underline-offset-4">Feed the model →</span>
-      </NuxtLink>
+      <p class="mt-10 text-center font-mono text-xs text-white/40">Chat process offline. Training is complete.</p>
     </section>
 
     <AwardReveal
@@ -552,5 +550,5 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
     />
 
     <ImageLightbox v-if="zoomed" :src="zoomed.src" :from="zoomed.from" @close="zoomed = null" />
-  </div>
+  </ModelCorruption>
 </template>

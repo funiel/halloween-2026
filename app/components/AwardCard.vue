@@ -19,9 +19,9 @@ defineProps<{ award: Award; byId: Map<string, FeedItem>; total: number }>();
       </div>
       <div :class="award.finale ? 'animate-glow-pulse my-3 text-7xl' : 'mt-2 mb-1 flex items-center gap-2'">
         <span :class="!award.finale && 'text-3xl'">{{ award.emoji ?? "🏆" }}</span>
-        <span v-if="!award.finale" class="text-gold font-display text-xl font-extrabold">{{ award.title }}</span>
+        <span v-if="!award.finale" class="text-gold font-display text-xl font-semibold tracking-tight">{{ award.title }}</span>
       </div>
-      <h3 v-if="award.finale" class="text-gold mb-2 font-display text-3xl leading-tight font-black">{{ award.title }}</h3>
+      <h3 v-if="award.finale" class="text-gold mb-2 font-display text-3xl leading-tight font-semibold tracking-tight">{{ award.title }}</h3>
       <div class="mb-3 font-mono text-xs text-white/50">
         {{ award.winners.length > 1 ? "shared by" : "goes to" }}
         {{ award.winners.length ? "" : "nobody. The model keeps this one." }}

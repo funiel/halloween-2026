@@ -16,6 +16,7 @@ Everything is hand-written lines, word lists and templates in `app/utils/replies
 - **Read-back:** it summarises your secret slightly wrong ("you high-fived your pen pal's brother…").
 - **Keyword reactions:** mention your ex, boss, mom, pet… and it reacts.
 - **Drift:** the more the counter climbs, the stranger it gets: asides, weirder sources, typos, then CAPS.
+- **Interface corruption:** from 80%, interference grows continuously with the percentage: shorter pauses, larger offsets, more screen tears, and more affected areas. From 95%, random visible interface words temporarily become words like “awake,” “die,” and “watching”; submitted secrets and input fields stay untouched. The orb turns red at 90%. At 100%, chat stops accepting input and melts down for 6.5 seconds before showing an error and a working link to `/agi`. Progress updates live, including operator target changes. Reduced-motion settings suppress interference and word swaps, with a shorter static transition to the error screen.
 - **Version bumps:** every entry bumps `26.11.N`; patch notes quote a safe word from an *older* secret, never the one just sent.
 - **Ends with a 💡 secret idea**, never a question, so every entry makes sense on its own in the feed.
 

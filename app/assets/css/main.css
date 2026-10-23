@@ -1,7 +1,5 @@
 @import "tailwindcss";
 /* Self-hosted fonts (bundled by Vite, no Google). */
-@import "@fontsource-variable/playfair-display/wght.css";
-@import "@fontsource-variable/playfair-display/wght-italic.css";
 @import "@fontsource-variable/jetbrains-mono/wght.css";
 
 /*
@@ -14,8 +12,7 @@
 @theme {
   --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  /* Awards-show serif for the Secret Awards */
-  --font-display: "Playfair Display Variable", "Didot", Georgia, serif;
+  --font-display: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* ChatGPT-ish dark palette */
   --color-ink-950: #0d0d0d;
@@ -668,8 +665,93 @@ emoji-picker {
   --category-font-color: rgb(255 255 255 / 0.5);
 }
 
+.model-interference {
+  opacity: 0;
+}
+
+.model-corruption[data-glitch="true"][data-fault="tear"] > .model-interference,
+.model-corruption[data-glitch="true"][data-fault="cascade"] > .model-interference,
+.model-corruption[data-glitch="true"][data-drift="3"] > .model-interference {
+  opacity: 1;
+}
+
+.model-tear {
+  background: rgb(0 0 0 / 0.28);
+  backdrop-filter: invert(0.12) contrast(1.8);
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+  box-shadow: 0 2px rgb(0 0 0 / 0.7);
+}
+
+.model-corruption[data-glitch="true"][data-fault="desync"],
+.model-corruption[data-glitch="true"][data-fault="cascade"] {
+  --fault-translate: var(--drift-shift) 0;
+  --fault-shadow: -1px 0 rgb(244 63 94 / 0.4), 1px 0 rgb(34 211 238 / 0.4);
+}
+
+.model-corruption[data-glitch="true"][data-fault="dropout"] {
+  --fault-opacity: 0.6;
+}
+
+.model-corruption[data-broken="false"][data-glitch="true"][data-target="all"] .model-fragment,
+.model-corruption[data-broken="false"][data-glitch="true"][data-target="header"] header.model-fragment,
+.model-corruption[data-broken="false"][data-glitch="true"][data-target="body"] :is(main, section).model-fragment,
+.model-corruption[data-broken="false"][data-glitch="true"][data-target="footer"] footer.model-fragment {
+  translate: var(--fault-translate, 0 0);
+  opacity: var(--fault-opacity, 1);
+  text-shadow: var(--fault-shadow, none);
+}
+
+.model-corruption[data-meltdown="true"] .model-fragment {
+  animation: model-collapse 0.9s steps(2, end) infinite;
+  text-shadow: -3px 0 rgb(239 68 68 / 0.7), 3px 0 rgb(34 211 238 / 0.5);
+}
+
+.haunted-word {
+  color: #f87171;
+  text-shadow: -1px 0 rgb(239 68 68 / 0.5);
+}
+
+@keyframes model-collapse {
+  0%, 100% { transform: translate(0, 0); clip-path: inset(0); }
+  25% { transform: translate(-8px, 3px) skewX(-1deg); clip-path: inset(1% 0 0); }
+  50% { transform: translate(5px, -2px); clip-path: inset(0 2% 1% 0); }
+  75% { transform: translate(-3px, 0) skewX(1deg); clip-path: inset(0); }
+}
+
+.model-corruption[data-broken="true"] .model-fragment {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.model-corruption[data-broken="true"] header.model-fragment {
+  transform: translateX(9px);
+  clip-path: inset(0 4% 12% 0);
+}
+
+.model-corruption[data-broken="true"] main.model-fragment {
+  transform: translateY(-6px);
+  clip-path: inset(0 0 18% 0);
+}
+
+.model-corruption[data-broken="true"] footer.model-fragment {
+  transform: translateX(-5px);
+}
+
 /* Respect "reduce motion": effects still land in their final state, just without the movement. */
 @media (prefers-reduced-motion: reduce) {
+  .model-corruption[data-meltdown="true"] .model-fragment {
+    animation: none;
+    text-shadow: none;
+  }
+  .model-interference {
+    display: none;
+  }
+
+  .model-corruption[data-broken="true"] :is(header, main, footer).model-fragment {
+    transform: none;
+    clip-path: none;
+  }
+
   *,
   ::before,
   ::after {

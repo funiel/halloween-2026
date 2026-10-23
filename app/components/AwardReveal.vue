@@ -78,7 +78,7 @@ onBeforeUnmount(() => {
       <div class="animate-fade-up mb-2 font-mono text-[11px] tracking-[0.3em] text-amber-200/60">
         {{ award.finale ? "THE GRAND FINALE" : `AWARD ${award.place} OF ${total}` }}
       </div>
-      <p v-if="!award.finale" class="animate-fade-up font-display text-xl text-white/75 italic">And the award for…</p>
+      <p v-if="!award.finale" class="animate-fade-up font-display text-lg text-white/75">And the award for…</p>
 
       <div v-if="reached('title')" class="relative my-4 grid place-items-center">
         <div v-if="award.finale" class="rays pointer-events-none absolute size-[560px]" />
@@ -91,13 +91,13 @@ onBeforeUnmount(() => {
       </div>
       <h2
         v-if="reached('title')"
-        class="animate-fade-up animate-delay-450 text-gold relative max-w-md font-display leading-tight font-black"
+        class="animate-fade-up animate-delay-450 text-gold relative max-w-md font-display leading-tight font-semibold tracking-tight"
         :class="award.finale ? 'text-5xl' : 'text-4xl'"
       >
         {{ award.title }}
       </h2>
 
-      <p v-if="reached('drum')" class="animate-fade-up drumroll mt-5 font-display text-lg text-white/70 italic">
+      <p v-if="reached('drum')" class="animate-fade-up drumroll mt-5 font-display text-lg text-white/70">
         {{ award.winners.length > 1 ? "is shared by" : "goes to" }}<span>.</span><span>.</span><span>.</span>
       </p>
 
@@ -132,7 +132,7 @@ onBeforeUnmount(() => {
             with <RollingNumber :value="String(award.count)" /> {{ award.emoji ?? "reactions" }}
           </p>
         </template>
-        <p v-else class="animate-award-flip font-display text-xl text-white/80 italic">Nobody. The model keeps this one for itself.</p>
+        <p v-else class="animate-award-flip font-display text-xl text-white/80">Nobody. The model keeps this one for itself.</p>
       </div>
     </template>
 
@@ -161,8 +161,8 @@ onBeforeUnmount(() => {
       </div>
 
       <div v-if="!reached('open')" class="relative z-30">
-        <p class="animate-fade-up font-display text-2xl text-amber-100/80 italic">And now…</p>
-        <p v-if="reached('intro')" class="animate-fade-up text-gold mt-4 font-display text-4xl leading-tight font-black">
+        <p class="animate-fade-up font-display text-xl text-amber-100/80">And now…</p>
+        <p v-if="reached('intro')" class="animate-fade-up text-gold mt-4 font-display text-4xl leading-tight font-semibold tracking-tight">
           The final award<br />of the night.
         </p>
       </div>

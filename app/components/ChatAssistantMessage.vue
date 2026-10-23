@@ -98,7 +98,7 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
     <!-- Thinking -->
     <div v-if="!blocks" class="flex items-center gap-2.5 py-1">
       <ModelOrb size="sm" thinking :tier="tier" />
-      <span class="shimmer font-medium">Thinking</span>
+      <span class="shimmer font-medium"><HauntedText text="Thinking" /></span>
       <span v-if="progress != null && progress < 1" class="text-sm text-ink-500 tabular-nums">
         · uploading {{ Math.round(progress * 100) }}%
       </span>
@@ -125,11 +125,13 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
             class="mb-3"
             :class="[b.bold && 'font-semibold', streaming && current === i && 'stream-cursor']"
           >
-            <span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
+            <HauntedText v-if="!streaming" :text="b.text" />
+            <template v-else><span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span></template>
           </p>
 
           <p v-else-if="b.t === 'cite'" class="-mt-1 mb-3 text-sm text-ink-500 italic">
-            <span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
+            <HauntedText v-if="!streaming" :text="b.text" />
+            <template v-else><span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span></template>
           </p>
 
           <AgiBar v-else-if="b.t === 'progress'" class="animate-rise-in" :percent="b.percent" :delta="b.delta" :version="b.version" />

@@ -7,7 +7,7 @@ const props = defineProps<{ size: "hero" | "sm"; thinking?: boolean; tier?: numb
 
 const palette = computed(() =>
   (props.tier ?? 0) >= 3
-    ? "from-red-500 via-orange-400 to-fuchsia-600"
+    ? "from-red-700 via-red-500 to-red-900"
     : (props.tier ?? 0) >= 2
       ? "from-fuchsia-500 via-rose-400 to-indigo-500"
       : "from-indigo-500 via-sky-400 to-fuchsia-400",
