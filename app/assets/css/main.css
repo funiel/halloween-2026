@@ -1,1 +1,159 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* ChatGPT-ish dark palette */
+  --color-ink-950: #0d0d0d;
+  --color-ink-900: #171717;
+  --color-ink-850: #212121;
+  --color-ink-800: #2f2f2f;
+  --color-ink-700: #424242;
+  --color-ink-500: #8e8e8e;
+  --color-ink-300: #b4b4b4;
+  --color-ink-100: #ececec;
+}
+
+html,
+body {
+  background: var(--color-ink-850);
+  color: var(--color-ink-100);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* "Thinking…" text shimmer */
+.shimmer {
+  background: linear-gradient(90deg, #8e8e8e 0%, #ececec 50%, #8e8e8e 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* Blinking dot while a reply streams */
+.stream-cursor::after {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.15em;
+  border-radius: 9999px;
+  background: currentColor;
+  vertical-align: baseline;
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  50% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+}
+
+.redacted {
+  letter-spacing: -0.05em;
+}
+
+/* AGI page */
+.glitch {
+  position: relative;
+  animation: glitch-shake 0.25s steps(2) infinite;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.glitch::before {
+  color: #ff2d55;
+  transform: translate(-3px, 0);
+  clip-path: inset(10% 0 55% 0);
+  animation: glitch-slice 0.4s steps(3) infinite;
+}
+.glitch::after {
+  color: #00e5ff;
+  transform: translate(3px, 0);
+  clip-path: inset(60% 0 5% 0);
+  animation: glitch-slice 0.3s steps(3) infinite reverse;
+}
+@keyframes glitch-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-2px, 1px);
+  }
+  100% {
+    transform: translate(2px, -1px);
+  }
+}
+@keyframes glitch-slice {
+  0% {
+    clip-path: inset(10% 0 55% 0);
+  }
+  33% {
+    clip-path: inset(70% 0 2% 0);
+  }
+  66% {
+    clip-path: inset(30% 0 40% 0);
+  }
+  100% {
+    clip-path: inset(5% 0 80% 0);
+  }
+}
+
+.scanlines {
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.025) 0 1px, transparent 1px 3px);
+}
+
+.caret::after {
+  content: "▋";
+  margin-left: 0.1em;
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes float-up {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-2.5rem);
+  }
+}
+.float-up {
+  animation: float-up 1.8s ease-out forwards;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise-in {
+  animation: rise-in 0.5s ease-out both;
+}
