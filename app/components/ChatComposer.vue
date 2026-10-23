@@ -88,12 +88,14 @@ const time = computed(() => {
 </script>
 
 <template>
-  <div class="rounded-[28px] bg-ink-800 p-2 shadow-[0_0_0_1px_rgb(255_255_255/0.04)]">
+  <div
+    class="rounded-[28px] bg-ink-800 p-2 shadow-[0_0_0_1px_rgb(255_255_255/0.04)] transition-shadow duration-300 focus-within:shadow-[0_0_0_1px_rgb(255_255_255/0.1),0_0_28px_rgb(129_140_248/0.14)]"
+  >
     <input ref="picker" type="file" class="hidden" :accept="accept" @change="onPick" />
 
     <!-- Attachment chip -->
     <div v-if="file" class="flex px-1 pt-1 pb-2">
-      <div class="relative flex max-w-full items-center gap-3 rounded-2xl bg-ink-700/60 p-2 pr-9">
+      <div class="animate-send-up relative flex max-w-full items-center gap-3 rounded-2xl bg-ink-700/60 p-2 pr-9">
         <img v-if="previewUrl" :src="previewUrl" alt="" class="size-12 rounded-xl object-cover" />
         <div v-else class="grid size-12 shrink-0 place-items-center rounded-xl bg-[#ff5588] text-white">
           <Icon :name="file.type.startsWith('audio/') ? 'mic' : 'file'" :size="22" />
@@ -123,18 +125,26 @@ const time = computed(() => {
       >
         <Icon name="x" />
       </button>
-      <div class="flex h-8 flex-1 items-center justify-end gap-[3px] overflow-hidden">
+      <div class="flex h-9 flex-1 items-center justify-end gap-[3px] overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_35%)]">
         <span
           v-for="(level, i) in recorder.levels.value"
           :key="i"
-          class="w-[3px] shrink-0 rounded-full bg-ink-100"
-          :style="{ height: `${Math.max(12, level * 100)}%` }"
+          class="w-1 shrink-0 rounded-full bg-linear-to-t from-red-400 via-rose-200 to-ink-100 transition-[height] duration-100 ease-out"
+          :style="{ height: `${Math.max(14, level * 100)}%` }"
         />
       </div>
       <span class="w-10 text-right font-mono text-sm tabular-nums text-ink-300">{{ time }}</span>
+      <!-- Live: a red mic with a pulsing ring -->
+      <span class="relative grid size-9 shrink-0 place-items-center">
+        <span class="animate-rec-ping absolute inset-0 rounded-full bg-red-500/60" />
+        <span class="animate-rec-ping absolute inset-0 rounded-full bg-red-500/40 [animation-delay:0.7s]" />
+        <span class="relative grid size-9 place-items-center rounded-full bg-red-500 text-white shadow-[0_0_16px_rgb(239_68_68/0.6)]">
+          <Icon name="mic" :size="18" />
+        </span>
+      </span>
       <button
         type="button"
-        class="grid size-9 place-items-center rounded-full bg-ink-100 text-ink-900"
+        class="grid size-9 place-items-center rounded-full bg-ink-100 text-ink-900 transition active:scale-90"
         aria-label="Finish recording"
         @click="recorder.stop()"
       >
@@ -155,7 +165,7 @@ const time = computed(() => {
       <div class="flex items-center gap-1 pt-1">
         <button
           type="button"
-          class="grid size-9 place-items-center rounded-full text-ink-100 hover:bg-ink-700"
+          class="grid size-9 place-items-center rounded-full text-ink-100 transition hover:bg-ink-700 active:scale-90"
           aria-label="Attach a file"
           @click="openPicker()"
         >
@@ -164,7 +174,7 @@ const time = computed(() => {
         <div class="flex-1" />
         <button
           type="button"
-          class="grid size-9 place-items-center rounded-full text-ink-100 hover:bg-ink-700"
+          class="grid size-9 place-items-center rounded-full text-ink-100 transition hover:bg-ink-700 active:scale-90"
           aria-label="Record a voice note"
           @click="startRecording"
         >
@@ -172,8 +182,8 @@ const time = computed(() => {
         </button>
         <button
           type="button"
-          class="grid size-9 place-items-center rounded-full transition"
-          :class="canSend ? 'bg-ink-100 text-ink-900' : 'bg-ink-700 text-ink-500'"
+          class="grid size-9 place-items-center rounded-full transition duration-200 active:scale-90"
+          :class="canSend ? 'scale-100 bg-ink-100 text-ink-900' : 'scale-90 bg-ink-700 text-ink-500'"
           :disabled="!canSend"
           aria-label="Send"
           @click="send"

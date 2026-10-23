@@ -1,7 +1,26 @@
 <script setup lang="ts">
-defineProps<{ version: string }>();
+const props = defineProps<{ version: string; tier?: number }>();
 const { toast } = useToast();
 const open = ref(false);
+
+// Drift: from tier 1 the version number glitches for a moment every few seconds ("26.11.2█").
+const glitched = ref<string | null>(null);
+let timer: ReturnType<typeof setTimeout> | undefined;
+function scheduleGlitch() {
+  const tier = props.tier ?? 0;
+  timer = setTimeout(() => {
+    if ((props.tier ?? 0) >= 1) {
+      const chars = [...props.version];
+      const i = Math.floor(Math.random() * chars.length);
+      chars[i] = Math.random() < 0.6 ? "█" : "▓▒░#%"[Math.floor(Math.random() * 5)]!;
+      glitched.value = chars.join("");
+      setTimeout(() => (glitched.value = null), 120 + Math.random() * 180);
+    }
+    scheduleGlitch();
+  }, (tier >= 3 ? 1200 : tier === 2 ? 2500 : 5000) * (0.5 + Math.random()));
+}
+onMounted(scheduleGlitch);
+onBeforeUnmount(() => clearTimeout(timer));
 
 const models = [
   { name: "FunGPT 26.11", note: "Great for most secrets", current: true },
@@ -20,16 +39,17 @@ function choose(m: (typeof models)[number]) {
   <div class="relative">
     <button
       type="button"
-      class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-lg font-medium hover:bg-ink-800"
+      class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-lg font-medium transition hover:bg-ink-800 active:scale-95"
+      :class="(tier ?? 0) >= 3 && 'rgb-split'"
       @click="open = !open"
     >
-      FunGPT <span class="text-ink-500 tabular-nums">{{ version }}</span>
+      FunGPT <span class="text-ink-500 tabular-nums" :class="glitched && 'text-red-400'">{{ glitched ?? version }}</span>
       <Icon name="chevron-down" :size="16" class="text-ink-500" />
     </button>
 
     <template v-if="open">
       <div class="fixed inset-0 z-30" @click="open = false" />
-      <div class="absolute top-full left-1/2 z-40 mt-1 w-72 -translate-x-1/2 rounded-2xl bg-ink-800 p-1.5 shadow-2xl ring-1 ring-white/10">
+      <div class="animate-rise-in absolute top-full left-1/2 z-40 mt-1 w-72 -translate-x-1/2 rounded-2xl bg-ink-800 p-1.5 shadow-2xl ring-1 ring-white/10 [animation-duration:0.2s]">
         <button
           v-for="m in models"
           :key="m.name"

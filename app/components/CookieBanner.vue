@@ -3,7 +3,7 @@ const emit = defineEmits<{ accept: [] }>();
 const { toast } = useToast();
 
 const dodges = ref(0);
-const offset = ref({ x: 0, y: 0 });
+const offset = ref({ x: 0, y: 0, r: 0 });
 const gaveUp = computed(() => dodges.value >= 4);
 
 /** The Reject button runs away. On touch it moves on pointerdown, so the tap never lands. */
@@ -16,6 +16,7 @@ function dodge(e: PointerEvent) {
   offset.value = {
     x: (Math.random() - 0.5) * 220,
     y: -(20 + Math.random() * 120),
+    r: (Math.random() - 0.5) * 40,
   };
 }
 
@@ -33,7 +34,7 @@ function acceptAll(loud: boolean) {
 
 <template>
   <div class="fixed inset-0 z-50 flex items-end bg-black/40 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:items-center sm:justify-center">
-    <div class="w-full max-w-md rounded-3xl bg-ink-800 p-5 shadow-2xl ring-1 ring-white/5">
+    <div class="animate-send-up w-full max-w-md rounded-3xl bg-ink-800 p-5 shadow-2xl ring-1 ring-white/5">
       <div class="mb-1 text-lg font-semibold">🍪 We value your privacy</div>
       <p class="mb-4 text-sm leading-6 text-ink-300">
         Not as much as your data, but we do value it. We use cookies, tracking pixels, vibes, and the
@@ -49,8 +50,8 @@ function acceptAll(loud: boolean) {
         <div class="relative h-9">
           <button
             type="button"
-            class="absolute left-1/2 top-1 px-3 py-1 text-xs whitespace-nowrap text-ink-500 transition-transform duration-200"
-            :style="{ transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` }"
+            class="absolute left-1/2 top-1 px-3 py-1 text-xs whitespace-nowrap text-ink-500 transition-transform duration-500 ease-spring"
+            :style="{ transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px) rotate(${offset.r}deg)` }"
             @pointerenter="dodge"
             @pointerdown="dodge"
             @click="reject"

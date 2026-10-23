@@ -60,3 +60,85 @@ export function confetti({ count = 140, from = "center", duration = 4200 }: Opti
   };
   requestAnimationFrame(frame);
 }
+
+const FIREWORK_COLORS = ["#fcd34d", "#fde68a", "#fff8dc", "#f59e0b", "#fb7185", "#a78bfa", "#67e8f9"];
+
+/** Rockets that climb with a glowing trail and burst into sparks. Canvas, no dependency. */
+export function fireworks({ rockets = 9, duration = 6500 }: { rockets?: number; duration?: number } = {}) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const canvas = document.createElement("canvas");
+  Object.assign(canvas.style, { position: "fixed", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: "79" });
+  document.body.appendChild(canvas);
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const W = (canvas.width = innerWidth * dpr);
+  const H = (canvas.height = innerHeight * dpr);
+  const ctx = canvas.getContext("2d")!;
+
+  interface Rocket { x: number; y: number; vy: number; peak: number; color: string; launch: number; done: boolean }
+  interface Spark { x: number; y: number; vx: number; vy: number; life: number; color: string }
+
+  const start = performance.now();
+  const launches: Rocket[] = Array.from({ length: rockets }, (_, i) => ({
+    x: W * (0.15 + Math.random() * 0.7),
+    y: H,
+    vy: -(H * 0.016 + Math.random() * H * 0.006),
+    peak: H * (0.15 + Math.random() * 0.3),
+    color: FIREWORK_COLORS[i % FIREWORK_COLORS.length]!,
+    launch: i * (duration * 0.55 / rockets) + Math.random() * 200,
+    done: false,
+  }));
+  let sparks: Spark[] = [];
+
+  function explode(r: Rocket) {
+    const n = 70 + Math.floor(Math.random() * 40);
+    const power = W * (0.004 + Math.random() * 0.003);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const s = power * (0.5 + Math.random() * 0.6);
+      sparks.push({ x: r.x, y: r.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 1, color: Math.random() < 0.3 ? "#fff8dc" : r.color });
+    }
+  }
+
+  const frame = (now: number) => {
+    const t = now - start;
+    // Fade the previous frame instead of clearing: gives every spark a trail.
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgb(0 0 0 / 0.22)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = "lighter";
+
+    for (const r of launches) {
+      if (r.done || t < r.launch) continue;
+      r.y += r.vy;
+      ctx.fillStyle = "#fff8dc";
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, 2.2 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+      if (r.y <= r.peak) {
+        r.done = true;
+        explode(r);
+      }
+    }
+
+    for (const s of sparks) {
+      s.vy += H * 0.00012;
+      s.vx *= 0.985;
+      s.vy *= 0.985;
+      s.x += s.vx;
+      s.y += s.vy;
+      s.life -= 0.012;
+      ctx.globalAlpha = Math.max(0, s.life);
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 1.8 * dpr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    sparks = sparks.filter((s) => s.life > 0);
+
+    if (t < duration || sparks.length) requestAnimationFrame(frame);
+    else canvas.remove();
+  };
+  requestAnimationFrame(frame);
+}

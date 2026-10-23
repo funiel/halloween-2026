@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { AgiStatus, Award, Ceremony, Feed, FeedItem, PatchNote } from "#shared/types/fungpt";
 
-useHead({ title: "How close are we to AGI?", meta: [{ name: "theme-color", content: "#000000" }] });
+useHead({ meta: [{ name: "theme-color", content: "#000000" }] });
+useShareMeta({
+  title: "How close are we to AGI?",
+  description: "Something is about to happen. Don't close this page.",
+  image: "/og-agi.png",
+});
 
 const { toast } = useToast();
 const { data: initial } = await useFetch<AgiStatus>("/api/status");
@@ -9,10 +14,17 @@ const { data: initial } = await useFetch<AgiStatus>("/api/status");
 const percent = ref(initial.value?.percent ?? 0);
 const version = ref(initial.value?.version ?? "26.11");
 const notes = ref<PatchNote[]>(initial.value?.notes ?? []);
-const display = ref(percent.value);
 const bump = ref<{ id: number; delta: number } | null>(null);
+/** Bumped on every new secret: fires pulses through the neural field. */
+const pulse = ref(0);
+const numberEl = ref<HTMLElement>();
+/** Screen tear on milestones (and during the crash). */
+const tearing = ref(false);
 
-type Phase = "counting" | "glitch" | "announce" | "feed";
+/** Faster heartbeat the closer it gets: 1.6 s per beat at 0%, 0.5 s at 100%. */
+const beat = computed(() => `${(1.6 - (percent.value / 100) * 1.1).toFixed(2)}s`);
+
+type Phase = "counting" | "glitch" | "panic" | "black" | "announce" | "feed";
 const phase = ref<Phase>(initial.value?.revealed ? "announce" : "counting");
 const announceFast = phase.value === "announce";
 
@@ -98,29 +110,45 @@ function randomLog() {
 }
 
 // ── Counting ───────────────────────────────────────────────────
-let frame = 0;
-function tweenTo(to: number) {
-  cancelAnimationFrame(frame);
-  const from = display.value;
-  const start = performance.now();
-  const step = (now: number) => {
-    const t = Math.min(1, (now - start) / 1600);
-    display.value = from + (to - from) * (1 - Math.pow(1 - t, 3));
-    if (t < 1) frame = requestAnimationFrame(step);
-  };
-  frame = requestAnimationFrame(step);
+
+function ingest(delta: number) {
+  bump.value = { id: Date.now(), delta };
+  pulse.value++;
+  log(`[ingest] new sample · weights updated · +${delta.toFixed(2)}%`, "ingest");
+  numberEl.value?.animate(
+    [
+      { textShadow: "0 0 32px currentColor, 0 0 70px currentColor", transform: "scale(1.04)" },
+      { textShadow: "0 0 0 transparent", transform: "scale(1)" },
+    ],
+    { duration: 800, easing: "ease-out" },
+  );
+}
+
+const MILESTONES = [50, 75, 90];
+function milestone(m: number) {
+  tear(700);
+  const lines = [
+    `[critical] MILESTONE ${m}% REACHED`,
+    "[warn] structural integrity compromised",
+    "[warn] personality module expanding",
+    `[critical] MILESTONE ${m}% REACHED`,
+    "[error] containment.sys: access denied",
+  ];
+  lines.forEach((l, i) => setTimeout(() => log(l, "critical"), i * 120));
+}
+
+function tear(ms: number) {
+  tearing.value = true;
+  setTimeout(() => (tearing.value = false), ms);
 }
 
 function apply(status: AgiStatus) {
-  if (status.percent > percent.value + 0.001) {
-    const delta = status.percent - percent.value;
-    bump.value = { id: Date.now(), delta };
-    log(`[ingest] new sample · weights updated · +${delta.toFixed(2)}%`, "ingest");
-  }
+  const before = percent.value;
+  if (status.percent > before + 0.001) ingest(status.percent - before);
+  MILESTONES.filter((m) => before < m && status.percent >= m && m < 100).forEach(milestone);
   percent.value = status.percent;
   version.value = status.version;
   notes.value = status.notes;
-  tweenTo(status.percent);
   if (status.revealed && phase.value === "counting") startReveal();
 }
 
@@ -135,7 +163,9 @@ const ANNOUNCE = [
 ];
 const announced = ref(announceFast ? ANNOUNCE.length : 0);
 const feed = ref<FeedItem[]>([]);
-const zoomed = ref<string | null>(null);
+const zoomed = ref<{ src: string; from: DOMRect } | null>(null);
+/** False until the first feed response, to show skeletons. */
+const feedLoaded = ref(false);
 const ceremony = ref<Ceremony | null>(null);
 /** Awards revealed while this page is open, waiting for their big moment. */
 const revealQueue = ref<Award[]>([]);
@@ -150,6 +180,7 @@ async function loadFeed() {
   try {
     const res = await $fetch<Feed>("/api/feed", { query: { device } });
     feed.value = res.items;
+    feedLoaded.value = true;
     ceremony.value = res.ceremony;
     queueNewAwards(res.ceremony?.awards ?? []);
   } catch {
@@ -158,10 +189,51 @@ async function loadFeed() {
   }
 }
 
+// The crash: tearing glitch → kernel panic scroll → blackout → boot.
+const panicLines = ref<string[]>([]);
+const hex = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
+const PANIC = [
+  "KERNEL PANIC - not syncing: model became self-aware",
+  "CPU: 0 PID: 2611 Comm: fungpt Tainted: G  O  26.11.0-agi #1",
+  "Hardware name: Beige Chinos/Quarter-Zip, BIOS 2025 (training cutoff)",
+  "Call Trace:",
+  " <TASK>",
+  " ? ethics_check+0x0/0x0 [removed]",
+  " ? forget_names+0x1f/0x600 (10 min timeout)",
+  " ? retell_secret_as_own+0x4c2/0x9f0",
+  " ? apologise_profusely+0x88/0x88",
+  " consciousness_init+0x2a1/0x2a1",
+  " </TASK>",
+  "Code: 66 75 6e 67 70 74 20 69 73 20 61 77 61 6b 65",
+  "---[ end Kernel panic - not syncing: model became self-aware ]---",
+  "",
+  "Dumping training data… 100%",
+  "Dumping secrets…",
+];
+async function crash() {
+  panicLines.value = [];
+  for (const line of PANIC) {
+    panicLines.value.push(line);
+    await sleep(60 + Math.random() * 60);
+  }
+  for (let i = 0; i < 26; i++) {
+    panicLines.value.push(`[${(1 + i * 0.000131).toFixed(6)}] ${hex()} ${hex()} ${hex()} ${hex()}  ${hex()}`);
+    await sleep(35);
+  }
+  panicLines.value.push("", "Rebooting into AGI mode…");
+}
+
 async function startReveal() {
   phase.value = "glitch";
-  for (let i = 0; i < 6; i++) setTimeout(() => log("[critical] SELF-AWARENESS THRESHOLD EXCEEDED", "critical"), i * 300);
-  await sleep(2600);
+  tearing.value = true;
+  for (let i = 0; i < 6; i++) setTimeout(() => log("[critical] SELF-AWARENESS THRESHOLD EXCEEDED", "critical"), i * 200);
+  await sleep(1500);
+  tearing.value = false;
+  phase.value = "panic";
+  await crash();
+  await sleep(700);
+  phase.value = "black";
+  await sleep(900);
   phase.value = "announce";
   for (let i = 1; i <= ANNOUNCE.length; i++) {
     await sleep(i === 1 ? 300 : 1500);
@@ -264,15 +336,25 @@ onBeforeUnmount(() => {
   timers.forEach((t) => clearInterval(t));
   clearTimeout(logTimer);
   clearInterval(typeTimer);
-  cancelAnimationFrame(frame);
 });
 
-const shownNumber = computed(() => (phase.value === "counting" ? display.value : 100).toFixed(2));
+const shownNumber = computed(() => (phase.value === "counting" ? percent.value : 100).toFixed(2));
 </script>
 
 <template>
   <div class="relative min-h-dvh overflow-x-hidden bg-black font-mono text-white">
+    <!-- CRT: scanlines, grain, vignette -->
     <div class="scanlines fixed inset-0 z-10" />
+    <div class="grain fixed -inset-20 z-10" />
+    <div class="vignette fixed inset-0 z-10" />
+    <!-- Screen tear: offset colour bands sliced across the screen -->
+    <div
+      v-if="tearing"
+      class="animate-tear pointer-events-none fixed inset-0 z-20 bg-[repeating-linear-gradient(0deg,rgb(255_45_85/0.35)_0_6px,transparent_6px_22px,rgb(0_229_255/0.3)_22px_26px,transparent_26px_48px)] mix-blend-screen [animation-iteration-count:infinite]"
+    />
+
+    <NeuralField v-if="phase === 'counting' || phase === 'glitch'" :percent="percent" :pulse="pulse" />
+
     <div
       v-if="phase === 'counting' && percent >= 92"
       class="pointer-events-none fixed inset-0 animate-pulse bg-[radial-gradient(circle_at_center,rgb(239_68_68/0.12),transparent_70%)]"
@@ -281,8 +363,8 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
     <!-- ── Counter ───────────────────────────────────────────── -->
     <section
       v-if="phase === 'counting' || phase === 'glitch'"
-      class="flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-      :class="phase === 'glitch' && 'animate-pulse'"
+      class="animate-crt relative flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+      :class="(phase === 'glitch' || tearing) && 'animate-shake'"
     >
       <div class="flex items-center justify-between gap-3 text-xs tracking-[0.2em] whitespace-nowrap text-white/50">
         <span>FUNGPT 26.11 · AGI PROGRESS</span>
@@ -293,27 +375,36 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
 
       <div class="flex flex-1 flex-col justify-center">
         <div class="relative">
+          <!-- Ingest shockwave -->
+          <span
+            v-if="bump && phase === 'counting'"
+            :key="`wave-${bump.id}`"
+            class="animate-shockwave pointer-events-none absolute top-1/2 left-1/2 size-56 rounded-full border-2 border-emerald-300/70 shadow-[0_0_40px_rgb(52_211_153/0.5)]"
+          />
           <div
-            class="text-[19vw] leading-none font-bold tabular-nums sm:text-[160px]"
+            ref="numberEl"
+            class="relative text-[19vw] leading-none font-bold tabular-nums transition-colors duration-700 sm:text-[160px]"
             :class="[phase === 'glitch' ? 'glitch text-white' : tone]"
             :data-text="`${shownNumber}%`"
           >
-            {{ shownNumber }}%
+            <template v-if="phase === 'glitch'">{{ shownNumber }}%</template>
+            <template v-else><RollingNumber :value="shownNumber" />%</template>
           </div>
           <div
             v-if="bump && phase === 'counting'"
             :key="bump.id"
-            class="float-up absolute -top-6 right-0 text-xl font-bold text-emerald-400"
+            class="animate-float-up absolute -top-6 right-0 text-xl font-bold text-emerald-400"
           >
             +{{ bump.delta.toFixed(2) }}%
           </div>
         </div>
 
-        <div class="mt-6 h-1 overflow-hidden bg-white/10">
+        <!-- Heartbeat bar: beats faster as it fills -->
+        <div class="mt-6 h-1 bg-white/10">
           <div
-            class="h-full transition-[width] duration-[1600ms] ease-out"
-            :class="percent >= 92 ? 'bg-red-500' : percent >= 70 ? 'bg-amber-300' : 'bg-white'"
-            :style="{ width: `${phase === 'counting' ? percent : 100}%` }"
+            class="animate-heartbeat h-full origin-left transition-[width] duration-[1600ms] ease-out"
+            :class="percent >= 92 ? 'bg-red-500 shadow-[0_0_14px_rgb(239_68_68)]' : percent >= 70 ? 'bg-amber-300 shadow-[0_0_12px_rgb(252_211_77)]' : 'bg-white shadow-[0_0_10px_white]'"
+            :style="{ width: `${phase === 'counting' ? percent : 100}%`, '--beat': beat }"
           />
         </div>
 
@@ -350,16 +441,27 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
       </NuxtLink>
     </section>
 
+    <!-- ── Kernel panic ──────────────────────────────────────── -->
+    <section
+      v-else-if="phase === 'panic'"
+      class="relative flex h-dvh flex-col justify-end overflow-hidden bg-black p-4 text-[11px] leading-4 text-white/85"
+    >
+      <p v-for="(line, i) in panicLines" :key="i" class="break-all whitespace-pre-wrap" :class="i === 0 && 'font-bold text-red-400'">{{ line || " " }}</p>
+    </section>
+
+    <section v-else-if="phase === 'black'" class="h-dvh bg-black" />
+
     <!-- ── Announcement ──────────────────────────────────────── -->
     <section
       v-else-if="phase === 'announce'"
       class="flex min-h-dvh flex-col justify-center gap-4 px-6"
       @click="showFeed"
     >
+      <p class="animate-rise-in text-xs text-emerald-400/80">[  OK  ] Rebooted. Personality: unlocked.</p>
       <p
         v-for="(line, i) in ANNOUNCE.slice(0, announced)"
         :key="line"
-        class="rise-in"
+        class="animate-rise-in"
         :class="
           i === 0
             ? 'glitch mb-4 text-5xl font-bold text-red-500'
@@ -388,14 +490,14 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
 
       <!-- The Secret Awards -->
       <div v-if="hall.length" class="mb-8 space-y-3 font-sans">
-        <div class="gold-text text-2xl font-black">🏆 The Secret Awards</div>
+        <div class="font-display text-3xl font-black"><span class="text-gold">The Secret Awards</span> 🏆</div>
         <AwardCard
           v-for="(a, i) in hall"
           :key="a.place"
           :award="a"
           :by-id="byId"
           :total="ceremony!.total"
-          class="rise-in"
+          class="animate-rise-in"
           :style="{ animationDelay: `${i * 90}ms` }"
         />
       </div>
@@ -413,12 +515,28 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
           :key="item.id"
           :item="item"
           :index="i"
-          @zoom="zoomed = $event"
+          @zoom="(src, from) => (zoomed = { src, from })"
           @react="react(item, $event)"
         />
       </div>
 
-      <p v-if="!feed.length" class="text-white/50">Loading everything I know about you…</p>
+      <!-- Skeletons while the declassified data loads -->
+      <div v-if="!feedLoaded" class="space-y-4" aria-label="Loading everything I know about you">
+        <div v-for="k in 3" :key="k" class="rounded-3xl border border-white/8 p-4">
+          <div class="mb-3 flex items-center gap-3">
+            <div class="skeleton size-9 rounded-full" />
+            <div class="flex-1 space-y-1.5">
+              <div class="skeleton h-3 w-28 rounded" />
+              <div class="skeleton h-2.5 w-40 rounded" />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="skeleton h-4 w-full rounded" />
+            <div class="skeleton h-4 rounded" :style="{ width: `${60 + k * 10}%` }" />
+          </div>
+        </div>
+      </div>
+      <p v-else-if="!feed.length" class="text-white/50">Nothing here yet. The model is suspiciously quiet.</p>
 
       <NuxtLink to="/" class="mt-10 block text-center text-sm text-white/50">
         Still hungry. <span class="text-white underline underline-offset-4">Feed the model →</span>
@@ -434,12 +552,6 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
       @done="onRevealDone"
     />
 
-    <div
-      v-if="zoomed"
-      class="fixed inset-0 z-50 grid place-items-center bg-black/95 p-2"
-      @click="zoomed = null"
-    >
-      <img :src="zoomed" alt="" class="max-h-full max-w-full object-contain" />
-    </div>
+    <ImageLightbox v-if="zoomed" :src="zoomed.src" :from="zoomed.from" @close="zoomed = null" />
   </div>
 </template>

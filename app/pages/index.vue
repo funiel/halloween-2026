@@ -4,7 +4,7 @@ import type { Block, Thinking } from "~/utils/replies";
 import type ChatComposer from "~/components/ChatComposer.vue";
 
 type Message =
-  | { id: number; role: "user"; text: string; file: File | null }
+  | { id: number; role: "user"; text: string; file: File | null; progress: number | null }
   | {
       id: number;
       role: "assistant";
@@ -31,8 +31,17 @@ let pendingSend: (() => void) | null = null;
 
 const FORGET_AFTER_MS = 10 * 60_000;
 
+useShareMeta({
+  title: "FunGPT 26.11",
+  description: "The most generic AI model on the market. Help train me.",
+  image: "/og.png",
+});
+
 const { data: status } = await useFetch<AgiStatus>("/api/status");
 const version = ref(status.value?.version ?? "26.11");
+const percent = ref(status.value?.revealed ? 100 : (status.value?.percent ?? 0));
+/** How weird the model (and its UI) has become: 0 normal → 3 almost AGI. */
+const tier = computed(() => (percent.value >= 90 ? 3 : percent.value >= 65 ? 2 : percent.value >= 35 ? 1 : 0));
 const heroIdea = ref(IDEAS[0]!);
 /** "Welcome back" within ten minutes, "Have we met?" after that. Like the costume. */
 const greeting = ref<string | null>(null);
@@ -88,7 +97,8 @@ async function run(text: string, file: File | null) {
   draftText.value = "";
   draftFile.value = null;
 
-  messages.value.push({ id: nextId++, role: "user", text, file });
+  const mine = reactive({ id: nextId++, role: "user" as const, text, file, progress: file ? 0 : null });
+  messages.value.push(mine);
   const reply = reactive({
     id: nextId++,
     role: "assistant" as const,
@@ -103,13 +113,15 @@ async function run(text: string, file: File | null) {
   const started = Date.now();
   try {
     const upload = file ? await prepareFile(file) : null;
-    const res = await submitEntry(text, upload, (p) => (reply.progress = p));
+    const res = await submitEntry(text, upload, (p) => (reply.progress = mine.progress = p));
+    mine.progress = 1;
     // Thinking is part of the product. It has to take a moment.
     await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (Date.now() - started))));
 
     const first = samples.value === 0;
     samples.value++;
     version.value = res.version;
+    percent.value = res.revealed ? 100 : res.percent;
     localStorage.setItem("fungpt-samples", String(samples.value));
     localStorage.setItem("fungpt-last-seen", String(Date.now()));
     // Only ever keep the redacted version on the phone, in case someone borrows it.
@@ -181,7 +193,7 @@ const chips = [
       >
         <Icon name="menu" :size="22" />
       </button>
-      <ModelPicker :version="version" />
+      <ModelPicker :version="version" :tier="tier" />
       <button type="button" class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800" aria-label="New chat" @click="newChat">
         <Icon name="edit" :size="20" />
       </button>
@@ -189,20 +201,24 @@ const chips = [
 
     <main ref="scroller" class="flex-1 overflow-y-auto" @scroll.passive="onScroll">
       <div v-if="!messages.length" class="flex h-full flex-col items-center justify-center px-6 pb-10 text-center">
-        <h1 class="mb-3 text-[28px] leading-tight font-semibold">What can you help me with?</h1>
-        <p v-if="greeting" class="redacted mb-3 max-w-xs text-ink-300">{{ greeting }}</p>
-        <p class="max-w-xs text-ink-500">💡 Secret idea: {{ heroIdea }}</p>
+        <div class="relative">
+          <ModelOrb size="hero" :tier="tier" />
+          <h1 class="animate-fade-up relative mb-3 text-[28px] leading-tight font-semibold">What can you help me with?</h1>
+        </div>
+        <p v-if="greeting" class="animate-fade-up animate-delay-200 relative mb-3 max-w-xs text-ink-300" :class="greeting.includes('█') && 'redacted'">{{ greeting }}</p>
+        <p class="animate-fade-up animate-delay-350 relative max-w-xs text-ink-500">💡 Secret idea: {{ heroIdea }}</p>
       </div>
 
       <div v-else ref="content" class="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-4">
         <template v-for="m in messages" :key="m.id">
-          <ChatUserMessage v-if="m.role === 'user'" :text="m.text" :file="m.file" />
+          <ChatUserMessage v-if="m.role === 'user'" :text="m.text" :file="m.file" :progress="m.progress" />
           <ChatAssistantMessage
             v-else
             :blocks="m.blocks"
             :thinking="m.thinking"
             :progress="m.progress"
             :animate="m.animate"
+            :tier="tier"
             @done="onReplyDone"
           />
         </template>
@@ -212,10 +228,11 @@ const chips = [
     <footer class="mx-auto w-full max-w-2xl shrink-0 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
       <div v-if="!messages.length" class="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
         <button
-          v-for="chip in chips"
+          v-for="(chip, i) in chips"
           :key="chip.label"
           type="button"
-          class="shrink-0 rounded-2xl border border-ink-700 px-3.5 py-2.5 text-sm whitespace-nowrap text-ink-300 hover:bg-ink-800"
+          class="animate-rise-in shrink-0 rounded-2xl border border-ink-700 px-3.5 py-2.5 text-sm whitespace-nowrap text-ink-300 transition hover:bg-ink-800 active:scale-95"
+          :style="{ animationDelay: `${400 + i * 70}ms` }"
           @click="chip.action"
         >
           {{ chip.label }}

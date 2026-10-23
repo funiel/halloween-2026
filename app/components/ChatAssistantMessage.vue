@@ -7,12 +7,18 @@ const props = defineProps<{
   /** Shown under "Thinking" while the upload is still running. */
   progress?: number | null;
   animate?: boolean;
+  /** Drift tier (0–3): from tier 2 the message occasionally flickers. */
+  tier?: number;
 }>();
 const emit = defineEmits<{ done: [] }>();
 const { toast } = useToast();
 
+/** Words keep their trailing space, so they can be rendered (and faded in) one by one. */
+const words = (text: string) => text.match(/\S+\s*/g) ?? [];
+
+// Streaming happens in words, like the real thing. A quote counts as its label plus one unit for the decrypt.
 const weight = (b: Block) =>
-  b.t === "p" ? b.text.length : b.t === "quote" ? b.label.length + b.text.length : b.t === "cite" ? b.text.length : 1;
+  b.t === "p" || b.t === "cite" ? words(b.text).length : b.t === "quote" ? words(b.label).length + 1 : 1;
 
 const offsets = computed(() => {
   let at = 0;
@@ -28,31 +34,32 @@ const shown = ref(props.animate ? 0 : Infinity);
 const streaming = computed(() => !!props.blocks && shown.value < total.value);
 const showThoughts = ref(false);
 
-let timer: ReturnType<typeof setInterval> | undefined;
+let timer: ReturnType<typeof setTimeout> | undefined;
+function tick() {
+  shown.value += Math.random() < 0.3 ? 2 : 1;
+  if (shown.value >= total.value) return emit("done");
+  // Slightly uneven pacing reads as "generated", not "animated".
+  timer = setTimeout(tick, 28 + Math.random() * 45);
+}
 watch(
   () => props.blocks,
   (blocks) => {
     if (!blocks || !props.animate) return;
     shown.value = 0;
-    clearInterval(timer);
-    timer = setInterval(() => {
-      shown.value += 2 + Math.floor(Math.random() * 5);
-      if (shown.value >= total.value) {
-        clearInterval(timer);
-        emit("done");
-      }
-    }, 22);
+    clearTimeout(timer);
+    tick();
   },
   { immediate: true },
 );
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => clearTimeout(timer));
 
-function slice(text: string, start: number) {
-  return text.slice(0, Math.max(0, shown.value - start));
-}
+/** The words of a block that have streamed in so far. */
+const upTo = (text: string, start: number) => words(text).slice(0, Math.max(0, shown.value - start));
 const visible = (i: number) => shown.value > offsets.value[i]!;
-/** Index of the block currently being typed, for the cursor. */
 const current = computed(() => offsets.value.findLastIndex((o) => shown.value > o));
+
+/** Flicker out of sync with other messages. */
+const flickerDelay = `${-Math.random() * 7}s`;
 
 function copy() {
   const text = (props.blocks ?? [])
@@ -83,9 +90,14 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
 </script>
 
 <template>
-  <div class="text-[16px] leading-7">
+  <div
+    class="text-[16px] leading-7"
+    :class="(tier ?? 0) >= 2 && !streaming && blocks && 'animate-flicker'"
+    :style="{ animationDelay: flickerDelay }"
+  >
     <!-- Thinking -->
-    <div v-if="!blocks" class="flex items-center gap-2 py-1">
+    <div v-if="!blocks" class="flex items-center gap-2.5 py-1">
+      <ModelOrb size="sm" thinking :tier="tier" />
       <span class="shimmer font-medium">Thinking</span>
       <span v-if="progress != null && progress < 1" class="text-sm text-ink-500 tabular-nums">
         · uploading {{ Math.round(progress * 100) }}%
@@ -102,7 +114,7 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
         Thought for {{ thinking.seconds }} seconds
         <Icon :name="showThoughts ? 'chevron-down' : 'chevron-right'" :size="14" />
       </button>
-      <ul v-if="thinking && showThoughts" class="mb-3 space-y-1 border-l-2 border-ink-700 pl-3 text-sm text-ink-500">
+      <ul v-if="thinking && showThoughts" class="animate-rise-in mb-3 space-y-1 border-l-2 border-ink-700 pl-3 text-sm text-ink-500">
         <li v-for="t in thinking.thoughts" :key="t">{{ t }}</li>
       </ul>
 
@@ -113,48 +125,40 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
             class="mb-3"
             :class="[b.bold && 'font-semibold', streaming && current === i && 'stream-cursor']"
           >
-            {{ slice(b.text, offsets[i]!) }}
+            <span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
           </p>
 
           <p v-else-if="b.t === 'cite'" class="-mt-1 mb-3 text-sm text-ink-500 italic">
-            {{ slice(b.text, offsets[i]!) }}
+            <span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
           </p>
 
-          <div v-else-if="b.t === 'progress'" class="mb-3 rounded-2xl bg-ink-800 p-3">
-            <div class="mb-2 flex items-baseline justify-between text-sm">
-              <span class="font-medium text-ink-300">AGI progress</span>
-              <span class="font-mono tabular-nums">
-                {{ b.percent.toFixed(2) }}%
-                <span v-if="b.delta > 0" class="text-emerald-400">+{{ b.delta.toFixed(2) }}%</span>
-              </span>
-            </div>
-            <AgiBar :percent="b.percent" :delta="b.delta" />
-            <div class="mt-2 font-mono text-xs text-ink-500">Model updated to v{{ b.version }}</div>
-          </div>
+          <AgiBar v-else-if="b.t === 'progress'" class="animate-rise-in" :percent="b.percent" :delta="b.delta" :version="b.version" />
 
           <figure v-else-if="b.t === 'quote'" class="mb-3">
-            <figcaption class="mb-2">{{ slice(b.label, offsets[i]!) }}</figcaption>
+            <figcaption class="mb-2">
+              <span v-for="(w, j) in upTo(b.label, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
+            </figcaption>
             <blockquote
-              v-if="shown > offsets[i]! + b.label.length"
-              class="redacted rounded-r-xl border-l-4 border-ink-500 bg-ink-800/60 py-2 pr-3 pl-4 text-ink-300"
+              v-if="shown >= offsets[i]! + weight(b)"
+              class="animate-rise-in redacted rounded-r-xl border-l-4 border-ink-500 bg-ink-800/60 py-2 pr-3 pl-4 text-ink-300"
             >
-              {{ slice(b.text, offsets[i]! + b.label.length) }}
+              <DecryptText :text="b.text" />
             </blockquote>
           </figure>
         </template>
       </template>
 
-      <div v-if="!streaming" class="-ml-2 flex text-ink-500">
-        <button type="button" class="grid size-8 place-items-center rounded-lg hover:bg-ink-800" aria-label="Copy" @click="copy">
+      <div v-if="!streaming" class="animate-rise-in -ml-2 flex text-ink-500">
+        <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Copy" @click="copy">
           <Icon name="copy" :size="18" />
         </button>
-        <button type="button" class="grid size-8 place-items-center rounded-lg hover:bg-ink-800" aria-label="Good response" @click="say(feedback.up)">
+        <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Good response" @click="say(feedback.up)">
           <Icon name="thumbs-up" :size="18" />
         </button>
-        <button type="button" class="grid size-8 place-items-center rounded-lg hover:bg-ink-800" aria-label="Bad response" @click="say(feedback.down)">
+        <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Bad response" @click="say(feedback.down)">
           <Icon name="thumbs-down" :size="18" />
         </button>
-        <button type="button" class="grid size-8 place-items-center rounded-lg hover:bg-ink-800" aria-label="Regenerate" @click="say(feedback.regen)">
+        <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Regenerate" @click="say(feedback.regen)">
           <Icon name="refresh" :size="18" />
         </button>
       </div>

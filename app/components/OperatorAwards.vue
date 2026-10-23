@@ -22,9 +22,9 @@ async function act(body: Record<string, unknown>) {
 const next = computed(() => props.awards[props.revealed]);
 const isFinaleNext = computed(() => props.revealed === props.awards.length - 1);
 
+// Revealing is hold-to-confirm (see HoldButton), so no confirm() popup.
 function revealNext() {
-  const label = isFinaleNext.value ? "the GRAND FINALE" : `"${next.value!.title}"`;
-  if (confirm(`Reveal ${label} on everyone's phone now?`)) void act({ action: "next" });
+  void act({ action: "next" });
 }
 function undo() {
   if (confirm("Take back the last revealed award?")) void act({ action: "undo" });
@@ -68,6 +68,7 @@ watch(
 
 function startDrag(a: OperatorAward, e: PointerEvent) {
   (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  navigator.vibrate?.(15); // "picked up"
   drag.value = { key: a.key, lastY: e.clientY, offset: 0 };
 }
 
@@ -86,9 +87,11 @@ function moveDrag(e: PointerEvent) {
     if (below && d.offset > rows[below.key]!.offsetHeight / 2) {
       d.offset -= rows[below.key]!.offsetHeight + GAP;
       items.splice(i, 2, below, items[i]!);
+      navigator.vibrate?.(8);
     } else if (above && i - 1 >= props.revealed && d.offset < -rows[above.key]!.offsetHeight / 2) {
       d.offset += rows[above.key]!.offsetHeight + GAP;
       items.splice(i - 1, 2, items[i]!, above);
+      navigator.vibrate?.(8);
     } else break;
   }
 }
@@ -116,14 +119,13 @@ function endDrag() {
           Next up: <b class="text-ink-100">{{ next.emoji ?? "🏆" }} {{ next.title }}</b>
           <span class="block text-ink-500">Would go to {{ winnerLine(next.live) }}</span>
         </p>
-        <button
-          type="button"
-          class="w-full rounded-2xl py-4 text-lg font-black text-black active:scale-[0.98]"
-          :class="isFinaleNext ? 'bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200' : 'bg-amber-300'"
-          @click="revealNext"
+        <HoldButton
+          :duration="isFinaleNext ? 1800 : 1200"
+          :class="isFinaleNext ? 'bg-linear-to-r from-amber-200 via-amber-400 to-amber-200' : 'bg-amber-300'"
+          @confirm="revealNext"
         >
-          {{ isFinaleNext ? "✨ Reveal the GRAND FINALE ✨" : `Reveal award ${revealed + 1} of ${awards.length}` }}
-        </button>
+          {{ isFinaleNext ? "Hold for the GRAND FINALE ✨" : `Hold to reveal award ${revealed + 1} of ${awards.length}` }}
+        </HoldButton>
       </template>
       <p v-else class="text-sm text-ink-300">All {{ awards.length }} awards revealed. 🎉 Take a bow.</p>
       <div v-if="revealed" class="mt-3 flex gap-2 text-sm">
@@ -143,10 +145,10 @@ function endDrag() {
           class="relative rounded-2xl p-3 transition-shadow"
           :class="[
             i === list.length - 1 ? 'bg-amber-300/15 ring-1 ring-amber-300/50' : 'bg-ink-800',
-            drag?.key === a.key && 'z-10 shadow-2xl ring-2 ring-amber-300',
+            drag?.key === a.key && 'z-10 bg-ink-700 shadow-[0_18px_40px_rgb(0_0_0/0.55)] ring-2 ring-amber-300',
             i < revealed && 'opacity-60',
           ]"
-          :style="drag?.key === a.key ? { transform: `translateY(${drag.offset}px) scale(1.02)` } : undefined"
+          :style="drag?.key === a.key ? { transform: `translateY(${drag.offset}px) scale(1.04) rotate(-1.2deg)` } : undefined"
         >
           <div class="flex items-center gap-2">
             <button

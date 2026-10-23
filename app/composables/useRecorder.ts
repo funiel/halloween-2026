@@ -47,7 +47,9 @@ export function useRecorder(onDone: (file: File) => void) {
       analyser.getByteTimeDomainData(data);
       let peak = 0;
       for (const v of data) peak = Math.max(peak, Math.abs(v - 128) / 128);
-      levels.value = [...levels.value.slice(-31), Math.min(1, peak * 2.5)];
+      // Smoothed, so the waveform rolls instead of jittering.
+      const prev = levels.value.at(-1) ?? 0;
+      levels.value = [...levels.value.slice(-31), prev * 0.55 + Math.min(1, peak * 2.5) * 0.45];
       frame = requestAnimationFrame(tick);
     };
     tick();

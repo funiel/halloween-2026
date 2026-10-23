@@ -6,17 +6,20 @@ const { toast } = useToast();
 
 const scroller = ref<HTMLElement>();
 const atEnd = ref(!props.consent);
+/** 0–1, drives the reading-progress bar. */
+const read = ref(0);
 
 function onScroll() {
   const el = scroller.value!;
+  read.value = Math.min(1, el.scrollTop / Math.max(1, el.scrollHeight - el.clientHeight));
   if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) atEnd.value = true;
 }
 
 const boxes = reactive([
-  { label: "I allow FunGPT to retell my secrets as its own experiences", checked: true },
-  { label: "I waive my right to be forgotten (FunGPT will forget on its own anyway)", checked: true },
-  { label: "I agree that the model is never wrong, only early", checked: true },
-  { label: "Subscribe me to the FunGPT newsletter, hourly", checked: true },
+  { label: "I allow FunGPT to retell my secrets as its own experiences", checked: true, bounces: 0 },
+  { label: "I waive my right to be forgotten (FunGPT will forget on its own anyway)", checked: true, bounces: 0 },
+  { label: "I agree that the model is never wrong, only early", checked: true, bounces: 0 },
+  { label: "Subscribe me to the FunGPT newsletter, hourly", checked: true, bounces: 0 },
 ]);
 
 const nags = [
@@ -29,6 +32,7 @@ function uncheck(box: (typeof boxes)[number]) {
   box.checked = false;
   setTimeout(() => {
     box.checked = true;
+    box.bounces++; // new key → the checkbox remounts and bounces back in
     toast(nags[Math.floor(Math.random() * nags.length)]!);
   }, 450);
 }
@@ -53,7 +57,7 @@ const clauses = [
 
 <template>
   <div class="fixed inset-0 z-50 flex items-end bg-black/60 sm:items-center sm:justify-center sm:p-4" @click.self="emit('close')">
-    <div class="flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-3xl bg-ink-800 shadow-2xl ring-1 ring-white/5 sm:rounded-3xl">
+    <div class="animate-send-up flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-ink-800 shadow-2xl ring-1 ring-white/5 sm:rounded-3xl">
       <div class="flex items-start justify-between gap-3 border-b border-ink-700 p-5 pb-4">
         <div>
           <div class="text-lg font-semibold">We've updated our Terms of Service</div>
@@ -62,6 +66,11 @@ const clauses = [
         <button type="button" class="grid size-8 place-items-center rounded-full hover:bg-ink-700" aria-label="Close" @click="emit('close')">
           <Icon name="x" />
         </button>
+      </div>
+
+      <!-- Reading progress, for all 47 pages -->
+      <div class="h-0.5 bg-ink-700">
+        <div class="h-full bg-linear-to-r from-emerald-500 to-lime-300 transition-[width] duration-150" :style="{ width: `${read * 100}%` }" />
       </div>
 
       <div ref="scroller" class="flex-1 overflow-y-auto overscroll-contain p-5 text-sm leading-6 text-ink-300" @scroll="onScroll">
@@ -79,8 +88,10 @@ const clauses = [
         <div class="mt-5 space-y-3">
           <label v-for="box in boxes" :key="box.label" class="flex items-start gap-3">
             <input
+              :key="box.bounces"
               type="checkbox"
               class="mt-1 size-4 shrink-0 accent-emerald-500"
+              :class="box.bounces && 'animate-check-bounce'"
               :checked="box.checked"
               @change="uncheck(box)"
             />
