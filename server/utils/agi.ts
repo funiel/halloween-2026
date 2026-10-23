@@ -19,10 +19,12 @@ function round(n: number) {
 
 export function getStatus(store: Store): AgiStatus {
   const { state, entries } = store;
-  if (state.revealedAt) return { percent: 100, revealed: true };
+  const model = { version: versionOf(entries.size), notes: latestNotes(store) };
+  if (state.revealedAt) return { percent: 100, revealed: true, ...model };
   return {
     percent: round(Math.max(state.peak, rawPercent(entries.size, state.target))),
     revealed: false,
+    ...model,
   };
 }
 

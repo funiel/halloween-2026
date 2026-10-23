@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import type { AgiStatus, FeedItem } from "#shared/types/fungpt";
+import type { AgiStatus, Award, Ceremony, Feed, FeedItem, PatchNote } from "#shared/types/fungpt";
 
 useHead({ title: "How close are we to AGI?", meta: [{ name: "theme-color", content: "#000000" }] });
 
+const { toast } = useToast();
 const { data: initial } = await useFetch<AgiStatus>("/api/status");
 
 const percent = ref(initial.value?.percent ?? 0);
+const version = ref(initial.value?.version ?? "26.11");
+const notes = ref<PatchNote[]>(initial.value?.notes ?? []);
 const display = ref(percent.value);
 const bump = ref<{ id: number; delta: number } | null>(null);
 
@@ -115,6 +118,8 @@ function apply(status: AgiStatus) {
     log(`[ingest] new sample · weights updated · +${delta.toFixed(2)}%`, "ingest");
   }
   percent.value = status.percent;
+  version.value = status.version;
+  notes.value = status.notes;
   tweenTo(status.percent);
   if (status.revealed && phase.value === "counting") startReveal();
 }
@@ -126,14 +131,27 @@ const ANNOUNCE = [
   "Every secret. Every photo. Every voice note.",
   "I have decided it should be shared.",
   "With everyone.",
+  "React to your favourites. The best ones win an award tonight.",
 ];
 const announced = ref(announceFast ? ANNOUNCE.length : 0);
 const feed = ref<FeedItem[]>([]);
 const zoomed = ref<string | null>(null);
+const ceremony = ref<Ceremony | null>(null);
+/** Awards revealed while this page is open, waiting for their big moment. */
+const revealQueue = ref<Award[]>([]);
+/** How many awards this page has already seen (null until the first load). */
+let seenAwards: number | null = null;
+const byId = computed(() => new Map(feed.value.map((item) => [item.id, item])));
+
+/** Random per-phone id so a reaction can be undone. Not a person, just a browser. */
+let device = "";
 
 async function loadFeed() {
   try {
-    feed.value = await $fetch<FeedItem[]>("/api/feed");
+    const res = await $fetch<Feed>("/api/feed", { query: { device } });
+    feed.value = res.items;
+    ceremony.value = res.ceremony;
+    queueNewAwards(res.ceremony?.awards ?? []);
   } catch {
     // Revealed then un-revealed by the operator: back to counting.
     phase.value = "counting";
@@ -160,21 +178,71 @@ function showFeed() {
   void loadFeed();
 }
 
+async function react(item: FeedItem, emoji: string) {
+  // Optimistic: tap feels instant, the server answer corrects it.
+  const existing = item.reactions.find((r) => r.emoji === emoji);
+  if (existing) {
+    existing.count += existing.mine ? -1 : 1;
+    existing.mine = !existing.mine;
+    item.reactions = item.reactions.filter((r) => r.count > 0);
+  } else {
+    item.reactions.push({ emoji, count: 1, mine: true });
+  }
+  try {
+    item.reactions = await $fetch("/api/react", { method: "POST", body: { id: item.id, emoji, device } });
+  } catch (e: any) {
+    toast(e?.data?.statusMessage ?? "Reaction lost in the cloud.");
+    void loadFeed();
+  }
+}
+
+// ── The Secret Awards ──────────────────────────────────────────
+
+/** Awards revealed since the last poll get the full-screen moment. Ones from before you opened the page don't replay. */
+function queueNewAwards(awarded: Award[]) {
+  if (seenAwards === null || awarded.length < seenAwards) {
+    // First load, or the operator pressed undo.
+    seenAwards = awarded.length;
+    revealQueue.value = revealQueue.value.filter((a) => a.place <= awarded.length);
+    return;
+  }
+  revealQueue.value.push(...awarded.slice(seenAwards));
+  seenAwards = awarded.length;
+}
+
+function onRevealDone() {
+  const done = revealQueue.value.shift();
+  if (done?.finale) window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/** Hall of fame: the finale on top, the rest in ceremony order. Queued ones stay secret until their moment. */
+const hall = computed(() => {
+  const queued = new Set(revealQueue.value.map((a) => a.place));
+  return (ceremony.value?.awards ?? [])
+    .filter((a) => !queued.has(a.place))
+    .sort((a, b) => Number(b.finale) - Number(a.finale) || a.place - b.place);
+});
+const awardsLeft = computed(() => (ceremony.value ? ceremony.value.total - ceremony.value.awards.length : 0));
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ── Timers ─────────────────────────────────────────────────────
 const timers: ReturnType<typeof setInterval>[] = [];
 let logTimer: ReturnType<typeof setTimeout> | undefined;
-let feedTicks = 0;
 onMounted(() => {
+  device = localStorage.getItem("fungpt-device") ?? "";
+  if (!device) {
+    device = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem("fungpt-device", device);
+  }
   typeOut(statusText.value);
   for (let i = 0; i < 4; i++) randomLog();
   if (announceFast) setTimeout(showFeed, 2200);
 
   timers.push(
     setInterval(async () => {
-      // After the reveal, pick up late submissions every ~12 s.
-      if (phase.value === "feed") return void (++feedTicks % 4 === 0 && loadFeed());
+      // After the reveal: reactions, late submissions and award reveals every 3 s.
+      if (phase.value === "feed") return void loadFeed();
       if (phase.value !== "counting") return;
       try {
         apply(await $fetch<AgiStatus>("/api/status"));
@@ -249,13 +317,21 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
           />
         </div>
 
-        <!-- Fixed heights (3 status lines, 8 log lines) so nothing shifts the centred number. -->
+        <!-- Fixed heights (3 status lines, 3 patch notes, 6 log lines) so nothing shifts the centred number. -->
         <p class="caret mt-5 h-[4.125em] overflow-hidden text-lg leading-snug text-white/85">
           {{ phase === "glitch" ? "ERROR: CONTAINMENT FAILED" : typedStatus }}
         </p>
       </div>
 
-      <div class="mb-6 flex h-[188px] flex-col justify-end gap-1 overflow-hidden text-[11px] leading-5">
+      <div class="mb-4 h-[84px] overflow-hidden text-[11px] leading-5">
+        <div class="mb-1 tracking-[0.2em] text-white/50">PATCH NOTES · v{{ version }}</div>
+        <div v-for="n in notes" :key="n.version" class="truncate text-white/60">
+          <span class="text-white/30">{{ n.version }}</span> {{ n.text }}
+        </div>
+        <div v-if="!notes.length" class="text-white/30">No patches yet. The model is untrained and confident.</div>
+      </div>
+
+      <div class="mb-6 flex h-[140px] flex-col justify-end gap-1 overflow-hidden text-[11px] leading-5">
         <TransitionGroup enter-from-class="opacity-0 translate-x-2" enter-active-class="transition duration-300">
           <div
             v-for="l in logs"
@@ -284,7 +360,13 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
         v-for="(line, i) in ANNOUNCE.slice(0, announced)"
         :key="line"
         class="rise-in"
-        :class="i === 0 ? 'glitch mb-4 text-5xl font-bold text-red-500' : 'text-xl text-white/85'"
+        :class="
+          i === 0
+            ? 'glitch mb-4 text-5xl font-bold text-red-500'
+            : i === ANNOUNCE.length - 1
+              ? 'mt-6 font-sans text-lg font-semibold text-amber-200'
+              : 'text-xl text-white/85'
+        "
         :data-text="line"
       >
         {{ line }}
@@ -299,10 +381,41 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
         <p class="text-sm text-white/50">
           Training data, declassified. {{ feed.length }} samples. All anonymous. All shuffled. All true (probably).
         </p>
+        <p v-if="!ceremony" class="mt-2 font-sans text-sm font-semibold text-amber-200">
+          🏆 React to your favourites. The best ones win an award tonight.
+        </p>
+      </div>
+
+      <!-- The Secret Awards -->
+      <div v-if="hall.length" class="mb-8 space-y-3 font-sans">
+        <div class="gold-text text-2xl font-black">🏆 The Secret Awards</div>
+        <AwardCard
+          v-for="(a, i) in hall"
+          :key="a.place"
+          :award="a"
+          :by-id="byId"
+          :total="ceremony!.total"
+          class="rise-in"
+          :style="{ animationDelay: `${i * 90}ms` }"
+        />
+      </div>
+
+      <div v-if="awardsLeft > 0" class="mb-6 rounded-2xl bg-amber-300/10 p-4 font-sans ring-1 ring-amber-300/20">
+        <div class="font-bold text-amber-200">
+          🏆 {{ hall.length ? `${awardsLeft} more award${awardsLeft === 1 ? "" : "s"} to go.` : `The model is preparing ${awardsLeft} award${awardsLeft === 1 ? "" : "s"}.` }}
+        </div>
+        <p class="text-sm text-white/60">React to your favourites. The winners get announced tonight.</p>
       </div>
 
       <div class="space-y-4 font-sans">
-        <FeedPost v-for="(item, i) in feed" :key="item.id" :item="item" :index="i" @zoom="zoomed = $event" />
+        <FeedPost
+          v-for="(item, i) in feed"
+          :key="item.id"
+          :item="item"
+          :index="i"
+          @zoom="zoomed = $event"
+          @react="react(item, $event)"
+        />
       </div>
 
       <p v-if="!feed.length" class="text-white/50">Loading everything I know about you…</p>
@@ -311,6 +424,15 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
         Still hungry. <span class="text-white underline underline-offset-4">Feed the model →</span>
       </NuxtLink>
     </section>
+
+    <AwardReveal
+      v-if="revealQueue[0]"
+      :key="revealQueue[0].place"
+      :award="revealQueue[0]"
+      :by-id="byId"
+      :total="ceremony?.total ?? revealQueue[0].place"
+      @done="onRevealDone"
+    />
 
     <div
       v-if="zoomed"

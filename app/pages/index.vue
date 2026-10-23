@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgiStatus } from "#shared/types/fungpt";
 import type { Block, Thinking } from "~/utils/replies";
 import type ChatComposer from "~/components/ChatComposer.vue";
 
@@ -28,7 +29,13 @@ const showCookies = ref(false);
 const showTerms = ref<"consent" | "read" | null>(null);
 let pendingSend: (() => void) | null = null;
 
-const heroQuestion = ref(QUESTIONS[0]!);
+const FORGET_AFTER_MS = 10 * 60_000;
+
+const { data: status } = await useFetch<AgiStatus>("/api/status");
+const version = ref(status.value?.version ?? "26.11");
+const heroIdea = ref(IDEAS[0]!);
+/** "Welcome back" within ten minutes, "Have we met?" after that. Like the costume. */
+const greeting = ref<string | null>(null);
 const placeholder = ref(PLACEHOLDERS[0]!);
 const samples = ref(0);
 let placeholderTimer: ReturnType<typeof setInterval> | undefined;
@@ -37,7 +44,16 @@ onBeforeUnmount(() => clearInterval(placeholderTimer));
 onMounted(() => {
   showCookies.value = !localStorage.getItem("fungpt-cookies");
   samples.value = Number(localStorage.getItem("fungpt-samples") ?? 0);
-  heroQuestion.value = nextQuestion();
+  heroIdea.value = nextIdea();
+  const lastSeen = Number(localStorage.getItem("fungpt-last-seen") ?? 0);
+  const lastSecret = localStorage.getItem("fungpt-last-redacted");
+  if (lastSeen && Date.now() - lastSeen < FORGET_AFTER_MS) {
+    greeting.value = lastSecret
+      ? `Welcome back! As you mentioned earlier: "${lastSecret}"`
+      : "Welcome back! I remember you. Vaguely.";
+  } else if (lastSeen) {
+    greeting.value = "Hi! I'm FunGPT. Have we met? I'm terrible with faces.";
+  }
   let i = 0;
   placeholderTimer = setInterval(() => {
     if (draftText.value) return;
@@ -93,8 +109,12 @@ async function run(text: string, file: File | null) {
 
     const first = samples.value === 0;
     samples.value++;
+    version.value = res.version;
     localStorage.setItem("fungpt-samples", String(samples.value));
-    reply.thinking = thinkingFor();
+    localStorage.setItem("fungpt-last-seen", String(Date.now()));
+    // Only ever keep the redacted version on the phone, in case someone borrows it.
+    if (text.length >= 12) localStorage.setItem("fungpt-last-redacted", redact(text));
+    reply.thinking = thinkingFor(text);
     reply.blocks = replyFor({ text, kind: file ? kindOfMime(file.type) : null }, res, first);
   } catch (e) {
     const err = e as SubmitError;
@@ -114,7 +134,8 @@ function onReplyDone() {
 function newChat() {
   if (busy.value) return;
   messages.value = [];
-  heroQuestion.value = nextQuestion();
+  heroIdea.value = nextIdea();
+  greeting.value = null;
   toast("New chat started. I still remember the old one.");
 }
 
@@ -160,7 +181,7 @@ const chips = [
       >
         <Icon name="menu" :size="22" />
       </button>
-      <ModelPicker />
+      <ModelPicker :version="version" />
       <button type="button" class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800" aria-label="New chat" @click="newChat">
         <Icon name="edit" :size="20" />
       </button>
@@ -169,7 +190,8 @@ const chips = [
     <main ref="scroller" class="flex-1 overflow-y-auto" @scroll.passive="onScroll">
       <div v-if="!messages.length" class="flex h-full flex-col items-center justify-center px-6 pb-10 text-center">
         <h1 class="mb-3 text-[28px] leading-tight font-semibold">What can you help me with?</h1>
-        <p class="max-w-xs text-ink-500">{{ heroQuestion }}</p>
+        <p v-if="greeting" class="redacted mb-3 max-w-xs text-ink-300">{{ greeting }}</p>
+        <p class="max-w-xs text-ink-500">💡 Secret idea: {{ heroIdea }}</p>
       </div>
 
       <div v-else ref="content" class="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-4">

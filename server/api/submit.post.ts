@@ -61,7 +61,9 @@ export default defineEventHandler(async (event): Promise<SubmitResult> => {
     handle: 1000 + Math.floor(Math.random() * 9000),
     hidden: false,
     told: false,
+    version: store.entries.size + 1,
   };
+  entry.patch = patchNoteFor(entry, store.entries.values());
   await saveEntry(store, entry);
   const status = await updateStatus(store);
 

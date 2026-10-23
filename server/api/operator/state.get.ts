@@ -11,5 +11,8 @@ export default defineEventHandler(async (event): Promise<OperatorState> => {
     entries: [...store.entries.values()]
       .sort((a, b) => b.createdAt - a.createdAt)
       .map((e) => ({ ...e, fileUrl: e.file ? `/api/files/${e.file.id}` : null })),
+    awards: operatorAwards(store),
+    awardsRevealed: store.state.awardsRevealed,
+    candidates: awardCandidates(store),
   };
 });

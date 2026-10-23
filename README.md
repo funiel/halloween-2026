@@ -6,7 +6,31 @@ The most generic AI model on the market, and it needs everyone's data. A Hallowe
 | ----------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`         | Front QR · "Help train me!" | Reverse ChatGPT: the model asks, guests confess. Text, photos, voice notes, any file. Replies stream in with fake citations and a redacted teaser of someone else's secret. |
 | `/agi`      | Back QR · "How close are we to AGI?" | Live percentage counter with ominous status lines. At 100% it glitches, announces itself, and turns into a shuffled, anonymous feed of everything. |
-| `/operator` | You                     | Password-protected. Read everything live, mark stories as told, hide anything nasty, adjust the AGI target, trigger or undo the reveal, wipe all data.    |
+| `/operator` | You                     | Password-protected. Read everything live, mark stories as told, hide anything nasty, adjust the AGI target, trigger or undo the reveal, announce the awards, wipe all data. |
+
+## The model's personality (no real AI, nothing leaves the server)
+
+Everything is hand-written lines, word lists and templates in `app/utils/replies.ts`.
+
+- **Openers fit the input:** "What a great secret!", "What a great photo!"; only real questions (ending in `?`) get "What a great question!" plus a confident, wrong answer.
+- **Read-back:** it summarises your secret slightly wrong ("you high-fived your pen pal's brother…").
+- **Keyword reactions:** mention your ex, boss, mom, pet… and it reacts.
+- **Drift:** the more the counter climbs, the stranger it gets: asides, weirder sources, typos, then CAPS.
+- **Forgets you after 10 minutes:** "Welcome back! As you mentioned earlier: …" vs. "Have we met?"
+- **Version bumps:** every entry bumps `26.11.N`; patch notes quote a safe word from an *older* secret, never the one just sent.
+- **Ends with a 💡 secret idea**, never a question, so every entry makes sense on its own in the feed.
+
+## Secret Awards
+
+After the reveal, every post in the feed takes reactions: a quick row of favourites, or the full emoji picker (every emoji, search, skin tones; data is bundled, no CDN). One of each emoji per phone, tap again to undo. The reveal itself tells everyone to react to their favourites.
+
+You run the ceremony from `/operator`:
+
+1. **Pick awards:** every emoji people used shows up with how often and who's leading. Tap **＋ Award**. "Most reactions overall" is a candidate too.
+2. **Name and order them:** tap a title to rename it, drag ⠿ to reorder. **The last one is the grand finale.**
+3. **Reveal them one by one:** each press plays a full-screen animation on every open feed (spotlight, emoji drop, gold title, drumroll, winner card flip, confetti). The finale gets a longer build-up, a sunburst and triple confetti, and stays as a big gold card at the top of the feed.
+
+The winner is frozen the moment an award is revealed, so late reactions can't change what you've read out. **Undo** and **Reset** are there if you tap too early.
 
 ## How the AGI counter works
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+defineProps<{ version: string }>();
 const { toast } = useToast();
 const open = ref(false);
 
@@ -22,7 +23,7 @@ function choose(m: (typeof models)[number]) {
       class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-lg font-medium hover:bg-ink-800"
       @click="open = !open"
     >
-      FunGPT <span class="text-ink-500">26.11</span>
+      FunGPT <span class="text-ink-500 tabular-nums">{{ version }}</span>
       <Icon name="chevron-down" :size="16" class="text-ink-500" />
     </button>
 

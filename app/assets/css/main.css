@@ -157,3 +157,171 @@ body {
 .rise-in {
   animation: rise-in 0.5s ease-out both;
 }
+
+/* ── Secret Awards ─────────────────────────────────────────── */
+
+.gold-text {
+  background: linear-gradient(110deg, #b45309 0%, #fcd34d 22%, #fff8dc 38%, #fbbf24 52%, #b45309 75%, #fcd34d 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gold-sheen 3.2s linear infinite;
+}
+@keyframes gold-sheen {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* Sunburst behind the finale emoji */
+.rays {
+  border-radius: 9999px;
+  background: repeating-conic-gradient(from 0deg, rgb(252 211 77 / 0.38) 0deg 9deg, transparent 9deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%);
+  mask: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: spin 14s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.award-drop {
+  animation: award-drop 1.1s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes award-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-140px) scale(0.2) rotate(-35deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0) scale(1.3) rotate(10deg);
+  }
+  75% {
+    transform: scale(0.92) rotate(-4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.award-flip {
+  animation: award-flip 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes award-flip {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(95deg) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) rotateY(0) scale(1);
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.8s ease-out both;
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+.glow-pulse {
+  animation: glow-pulse 2.4s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  50% {
+    filter: drop-shadow(0 0 28px rgb(252 211 77 / 0.75));
+  }
+}
+
+/* A spotlight that sweeps across the dark overlay */
+.spotlight {
+  background: radial-gradient(circle at var(--x, 50%) 40%, rgb(255 236 179 / 0.18), transparent 45%), #000;
+  animation: spotlight 5s ease-in-out infinite alternate;
+}
+@property --x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@keyframes spotlight {
+  from {
+    --x: 25%;
+  }
+  to {
+    --x: 75%;
+  }
+}
+
+.drumroll span {
+  animation: blink 1s infinite;
+}
+.drumroll span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.drumroll span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.finale-card {
+  box-shadow:
+    0 0 0 2px rgb(252 211 77 / 0.7),
+    0 0 60px rgb(252 211 77 / 0.25);
+  animation: finale-glow 3s ease-in-out infinite;
+}
+@keyframes finale-glow {
+  50% {
+    box-shadow:
+      0 0 0 2px rgb(252 211 77 / 1),
+      0 0 90px rgb(252 211 77 / 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .award-drop,
+  .award-flip,
+  .fade-up,
+  .rays,
+  .gold-text,
+  .glow-pulse,
+  .spotlight,
+  .finale-card {
+    animation: none;
+  }
+}
+
+/* Full emoji picker in the feed (emoji-picker-element) */
+emoji-picker {
+  width: 100%;
+  height: 330px;
+  --num-columns: 8;
+  --emoji-size: 1.45rem;
+  --background: transparent;
+  --border-color: transparent;
+  --border-size: 0;
+  --button-hover-background: rgb(255 255 255 / 0.1);
+  --button-active-background: rgb(255 255 255 / 0.18);
+  --indicator-color: #fcd34d;
+  --outline-color: #fcd34d;
+  --input-border-color: rgb(255 255 255 / 0.15);
+  --input-font-color: #ececec;
+  --input-placeholder-color: rgb(255 255 255 / 0.35);
+  --input-border-radius: 0.75rem;
+  --category-font-color: rgb(255 255 255 / 0.5);
+}

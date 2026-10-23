@@ -1,12 +1,16 @@
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { Entry } from "#shared/types/fungpt";
+import type { AwardConfig, Entry } from "#shared/types/fungpt";
 
 interface State {
   target: number;
   /** Highest percentage ever shown, so the counter never goes backwards. */
   peak: number;
   revealedAt: number | null;
+  /** The operator's awards, in ceremony order. */
+  awards: AwardConfig[];
+  /** How many of them have been revealed so far. */
+  awardsRevealed: number;
 }
 
 interface Store {
@@ -43,6 +47,8 @@ async function load(): Promise<Store> {
     target: Number(useRuntimeConfig().agiTarget) || 40,
     peak: 0,
     revealedAt: null,
+    awards: [],
+    awardsRevealed: 0,
   };
   try {
     state = { ...state, ...JSON.parse(await readFile(join(dir, "state.json"), "utf8")) };

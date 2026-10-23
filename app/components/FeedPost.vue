@@ -1,10 +1,30 @@
 <script setup lang="ts">
 import type { FeedItem } from "#shared/types/fungpt";
+// Bundled with the app, so the picker never fetches emoji data from a CDN.
+import emojiData from "emoji-picker-element-data/en/emojibase/data.json?url";
 
 const props = defineProps<{ item: FeedItem; index: number }>();
-const emit = defineEmits<{ zoom: [url: string] }>();
+const emit = defineEmits<{ zoom: [url: string]; react: [emoji: string] }>();
 
 const hue = computed(() => (props.item.handle * 47) % 360);
+
+const QUICK = ["😂", "😱", "💀", "🤫", "🥹", "🔥", "👀", "🤖"];
+const picking = ref(false);
+const pickerLoaded = ref(false);
+
+function react(emoji: string) {
+  picking.value = false;
+  emit("react", emoji);
+}
+
+/** The full picker (every emoji, search, skin tones) loads the first time someone needs it. */
+async function togglePicker() {
+  picking.value = !picking.value;
+  if (picking.value && !pickerLoaded.value) {
+    await import("emoji-picker-element");
+    pickerLoaded.value = true;
+  }
+}
 </script>
 
 <template>
@@ -65,8 +85,51 @@ const hue = computed(() => (props.item.handle * 47) % 360);
       </a>
     </template>
 
-    <div v-if="item.told" class="mt-3 font-mono text-xs text-amber-300/80">
-      ↻ The model already told this story as its own.
+    <p class="mt-3 text-sm leading-5 italic" :class="item.told ? 'text-amber-300/80' : 'text-white/45'">
+      {{ takeFor(item) }}
+    </p>
+
+    <!-- Reactions -->
+    <div class="mt-3 flex flex-wrap items-center gap-1.5 font-sans">
+      <button
+        v-for="r in item.reactions"
+        :key="r.emoji"
+        type="button"
+        class="flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-sm tabular-nums transition"
+        :class="r.mine ? 'border-sky-400/60 bg-sky-400/15 text-white' : 'border-white/10 bg-white/5 text-white/70'"
+        @click="react(r.emoji)"
+      >
+        <span class="text-base leading-none">{{ r.emoji }}</span>{{ r.count }}
+      </button>
+      <button
+        type="button"
+        class="grid h-8 w-10 place-items-center rounded-full border border-white/10 bg-white/5 text-white/60"
+        aria-label="Add reaction"
+        @click="togglePicker"
+      >
+        <span class="text-sm">＋😀</span>
+      </button>
+    </div>
+
+    <div v-if="picking" class="mt-2 rounded-2xl bg-white/5 p-2 font-sans">
+      <div class="flex justify-between">
+        <button
+          v-for="e in QUICK"
+          :key="e"
+          type="button"
+          class="grid size-9 place-items-center rounded-xl text-xl hover:bg-white/10 active:scale-90"
+          @click="react(e)"
+        >
+          {{ e }}
+        </button>
+      </div>
+      <emoji-picker
+        v-if="pickerLoaded"
+        class="dark mt-2"
+        :data-source="emojiData"
+        @emoji-click="react($event.detail.unicode)"
+      />
+      <p v-else class="py-6 text-center text-sm text-white/40">Loading every emoji ever made…</p>
     </div>
   </article>
 </template>

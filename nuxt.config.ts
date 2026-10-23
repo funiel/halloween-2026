@@ -5,8 +5,14 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   css: ["~/assets/css/main.css"],
+  vue: {
+    // The full emoji picker in the feed is a web component.
+    compilerOptions: { isCustomElement: (tag) => tag === "emoji-picker" },
+  },
   vite: {
     plugins: [tailwindcss()],
+    // Loaded lazily from the feed; pre-bundle it so dev doesn't reload on first open.
+    optimizeDeps: { include: ["emoji-picker-element"] },
   },
   app: {
     head: {

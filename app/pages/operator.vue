@@ -49,6 +49,15 @@ function toggleReveal() {
   if (confirm(question)) void setState({ revealed });
 }
 
+const byId = computed(() => new Map((state.value?.entries ?? []).map((e) => [e.id, e])));
+
+function reactionSummary(e: OperatorEntry) {
+  return Object.entries(e.reactions ?? {})
+    .filter(([, devices]) => devices.length)
+    .map(([emoji, devices]) => `${emoji} ${devices.length}`)
+    .join("  ");
+}
+
 async function wipe() {
   try {
     await $fetch("/api/operator/wipe", { method: "POST", body: { confirm: wipeText.value } });
@@ -130,6 +139,17 @@ onBeforeUnmount(() => clearInterval(timer));
         </button>
       </div>
 
+      <!-- Secret Awards: you pick them, order them, and reveal them one by one -->
+      <OperatorAwards
+        v-if="state.revealed"
+        class="mb-8"
+        :awards="state.awards"
+        :revealed="state.awardsRevealed"
+        :candidates="state.candidates"
+        :by-id="byId"
+        @changed="refresh"
+      />
+
       <!-- Filters -->
       <div class="mb-3 flex gap-1 rounded-full bg-ink-800 p-1 text-sm">
         <button
@@ -157,6 +177,7 @@ onBeforeUnmount(() => clearInterval(timer));
             <span v-if="e.told" class="text-emerald-400">told ✓</span>
           </div>
 
+          <p v-if="reactionSummary(e)" class="mb-2 text-sm">{{ reactionSummary(e) }}</p>
           <p v-if="e.text" class="mb-3 text-[17px] leading-7 whitespace-pre-wrap break-words">{{ e.text }}</p>
 
           <template v-if="e.file && e.fileUrl">

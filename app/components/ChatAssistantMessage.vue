@@ -129,6 +129,7 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
               </span>
             </div>
             <AgiBar :percent="b.percent" :delta="b.delta" />
+            <div class="mt-2 font-mono text-xs text-ink-500">Model updated to v{{ b.version }}</div>
           </div>
 
           <figure v-else-if="b.t === 'quote'" class="mb-3">
