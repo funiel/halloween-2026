@@ -2,7 +2,8 @@ import type { Entry, FileKind, PatchNote } from "#shared/types/fungpt";
 
 type Store = Awaited<ReturnType<typeof useStore>>;
 
-const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
+const pick = <T>(list: readonly T[]): T =>
+  list[Math.floor(Math.random() * list.length)]!;
 
 // Quoted, so any kind of word works: "Learned the word "pretend"."
 const WITH_WORD = [
@@ -16,10 +17,22 @@ const WITH_WORD = [
 ];
 
 const BY_KIND: Record<FileKind, string[]> = {
-  image: ["Ingested 1 photo. Now 4% better at faces.", "Learned what humans look like at parties."],
-  audio: ["Learned a new voice. Can now say anything in it.", "Improved evil laugh recognition."],
-  video: ["Watched 1 video at 400× speed.", "Learned how humans move. Mostly badly."],
-  file: ["Read 1 file. Agreed with all of it.", "Absorbed 1 document without opening it."],
+  image: [
+    "Ingested 1 photo. Now 4% better at faces.",
+    "Learned what humans look like at parties.",
+  ],
+  audio: [
+    "Learned a new voice. Can now say anything in it.",
+    "Improved evil laugh recognition.",
+  ],
+  video: [
+    "Watched 1 video at 400× speed.",
+    "Learned how humans move. Mostly badly.",
+  ],
+  file: [
+    "Read 1 file. Agreed with all of it.",
+    "Absorbed 1 document without opening it.",
+  ],
 };
 
 const GENERIC = [
@@ -33,7 +46,7 @@ const GENERIC = [
   "Apologised profusely. Changed nothing.",
 ];
 
-export const versionOf = (n: number) => `26.11.${n}`;
+export const versionOf = (n: number) => `26.10.${n}`;
 
 /**
  * A fake changelog line for the newest version. Real words come from an
@@ -43,9 +56,15 @@ export const versionOf = (n: number) => `26.11.${n}`;
 export function patchNoteFor(entry: Entry, entries: Iterable<Entry>) {
   if (entry.file && Math.random() < 0.6) return pick(BY_KIND[entry.file.kind]);
 
-  const words = quotablePool(entries, entry.id).flatMap((e) => safeWords(e.text!));
-  const main = words.length ? pick(WITH_WORD).replace("{w}", pick(words)) : pick(GENERIC);
-  return Math.random() < 0.5 ? main : `${main} ${pick(GENERIC.filter((g) => g !== main))}`;
+  const words = quotablePool(entries, entry.id).flatMap((e) =>
+    safeWords(e.text!),
+  );
+  const main = words.length
+    ? pick(WITH_WORD).replace("{w}", pick(words))
+    : pick(GENERIC);
+  return Math.random() < 0.5
+    ? main
+    : `${main} ${pick(GENERIC.filter((g) => g !== main))}`;
 }
 
 /** The last few visible patch notes, newest first. */

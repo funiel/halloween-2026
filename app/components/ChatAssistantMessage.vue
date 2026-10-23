@@ -9,6 +9,7 @@ const props = defineProps<{
   animate?: boolean;
   /** Drift tier (0–3): from tier 2 the message occasionally flickers. */
   tier?: number;
+  percent?: number;
 }>();
 const emit = defineEmits<{ done: [] }>();
 const { toast } = useToast();
@@ -97,7 +98,7 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
   >
     <!-- Thinking -->
     <div v-if="!blocks" class="flex items-center gap-2.5 py-1">
-      <ModelOrb size="sm" thinking :tier="tier" />
+      <ModelOrb size="sm" thinking :percent="percent" :tier="tier" />
       <span class="shimmer font-medium"><HauntedText text="Thinking" /></span>
       <span v-if="progress != null && progress < 1" class="text-sm text-ink-500 tabular-nums">
         · uploading {{ Math.round(progress * 100) }}%
@@ -118,50 +119,61 @@ const say = (list: string[]) => toast(list[Math.floor(Math.random() * list.lengt
         <li v-for="t in thinking.thoughts" :key="t">{{ t }}</li>
       </ul>
 
-      <template v-for="(b, i) in blocks" :key="i">
-        <template v-if="visible(i)">
-          <p
-            v-if="b.t === 'p'"
-            class="mb-3"
-            :class="[b.bold && 'font-semibold', streaming && current === i && 'stream-cursor']"
-          >
-            <HauntedText v-if="!streaming" :text="b.text" />
-            <template v-else><span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span></template>
-          </p>
-
-          <p v-else-if="b.t === 'cite'" class="-mt-1 mb-3 text-sm text-ink-500 italic">
-            <HauntedText v-if="!streaming" :text="b.text" />
-            <template v-else><span v-for="(w, j) in upTo(b.text, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span></template>
-          </p>
-
-          <AgiBar v-else-if="b.t === 'progress'" class="animate-rise-in" :percent="b.percent" :delta="b.delta" :version="b.version" />
-
-          <figure v-else-if="b.t === 'quote'" class="mb-3">
-            <figcaption class="mb-2">
-              <span v-for="(w, j) in upTo(b.label, offsets[i]!)" :key="j" class="animate-word-in">{{ w }}</span>
-            </figcaption>
-            <blockquote
-              v-if="shown >= offsets[i]! + weight(b)"
-              class="animate-rise-in redacted rounded-r-xl border-l-4 border-ink-500 bg-ink-800/60 py-2 pr-3 pl-4 text-ink-300"
+      <div class="space-y-3">
+        <template v-for="(b, bi) in blocks" :key="bi">
+          <template v-if="visible(bi)">
+            <p
+              v-if="b.t === 'p'"
+              :class="[streaming && bi === current && 'stream-cursor', b.bold && 'font-semibold']"
             >
-              <DecryptText :text="b.text" />
-            </blockquote>
-          </figure>
-        </template>
-      </template>
+              <span
+                v-for="(w, wi) in upTo(b.text, offsets[bi]!)"
+                :key="wi"
+                :class="animate && 'animate-word-in'"
+              >{{ w }}</span>
+            </p>
 
-      <div v-if="!streaming" class="animate-rise-in -ml-2 flex text-ink-500">
+            <!-- Secret from another human: label streams in, then the quote decrypts -->
+            <div v-else-if="b.t === 'quote'" class="space-y-2">
+              <p :class="streaming && shown <= offsets[bi]! + words(b.label).length && 'stream-cursor'">
+                <span
+                  v-for="(w, wi) in upTo(b.label, offsets[bi]!)"
+                  :key="wi"
+                  :class="animate && 'animate-word-in'"
+                >{{ w }}</span>
+              </p>
+              <SecretTeaser v-if="shown > offsets[bi]! + words(b.label).length" :text="b.text" />
+            </div>
+
+            <!-- Fake citation -->
+            <p
+              v-else-if="b.t === 'cite'"
+              class="text-sm text-ink-500 italic"
+              :class="streaming && bi === current && 'stream-cursor'"
+            >
+              <span
+                v-for="(w, wi) in upTo(b.text, offsets[bi]!)"
+                :key="wi"
+                :class="animate && 'animate-word-in'"
+              >{{ w }}</span>
+            </p>
+          </template>
+        </template>
+      </div>
+
+      <!-- Action row, once the message is done -->
+      <div v-if="!streaming" class="animate-rise-in -ml-1.5 mt-2 flex items-center gap-0.5 text-ink-500">
         <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Copy" @click="copy">
-          <Icon name="copy" :size="18" />
+          <Icon name="copy" :size="16" />
         </button>
         <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Good response" @click="say(feedback.up)">
-          <Icon name="thumbs-up" :size="18" />
+          <Icon name="thumb-up" :size="16" />
         </button>
         <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Bad response" @click="say(feedback.down)">
-          <Icon name="thumbs-down" :size="18" />
+          <Icon name="thumb-down" :size="16" />
         </button>
         <button type="button" class="grid size-8 place-items-center rounded-lg transition hover:bg-ink-800 active:scale-90" aria-label="Regenerate" @click="say(feedback.regen)">
-          <Icon name="refresh" :size="18" />
+          <Icon name="refresh" :size="16" />
         </button>
       </div>
     </template>

@@ -19,7 +19,7 @@ export interface Entry {
   handle: number;
   hidden: boolean;
   told: boolean;
-  /** The model version this entry produced (26.11.<version>). */
+  /** The model version this entry produced (26.10.<version>). */
   version?: number;
   /** Fake patch note for that version. Never quotes this entry itself. */
   patch?: string;

@@ -18,7 +18,7 @@ export default defineNuxtConfig({
     // Soft blur-fade between / and /agi (styles in main.css)
     pageTransition: { name: "page", mode: "out-in" },
     head: {
-      title: "FunGPT 26.11",
+      title: "FunGPT 26.10",
       htmlAttrs: { lang: "en" },
       meta: [
         {
@@ -32,7 +32,10 @@ export default defineNuxtConfig({
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-title", content: "FunGPT" },
-        { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "black-translucent",
+        },
       ],
       link: [
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

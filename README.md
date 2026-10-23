@@ -1,12 +1,12 @@
-# FunGPT 26.11 🤖
+# FunGPT 26.10 🤖
 
 The most generic AI model on the market, and it needs everyone's data. A Halloween costume companion app.
 
-| Route       | Who                     | What                                                                                                                                                      |
-| ----------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`         | Front QR · "Help train me!" | Reverse ChatGPT: the model asks, guests confess. Text, photos, voice notes, any file. Replies stream in with fake citations and a redacted teaser of someone else's secret. |
-| `/agi`      | Back QR · "How close are we to AGI?" | Live percentage counter with ominous status lines. At 100% it glitches, announces itself, and turns into a shuffled, anonymous feed of everything. |
-| `/operator` | You                     | Password-protected. Read everything live, mark stories as told, hide anything nasty, adjust the AGI target, trigger or undo the reveal, announce the awards, wipe all data. |
+| Route       | Who                                  | What                                                                                                                                                                        |
+| ----------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`         | Front QR · "Help train me!"          | Reverse ChatGPT: the model asks, guests confess. Text, photos, voice notes, any file. Replies stream in with fake citations and a redacted teaser of someone else's secret. |
+| `/agi`      | Back QR · "How close are we to AGI?" | Live percentage counter with ominous status lines. At 100% it glitches, announces itself, and turns into a shuffled, anonymous feed of everything.                          |
+| `/operator` | You                                  | Password-protected. Read everything live, mark stories as told, hide anything nasty, adjust the AGI target, trigger or undo the reveal, announce the awards, wipe all data. |
 
 ## The model's personality (no real AI, nothing leaves the server)
 
@@ -17,7 +17,7 @@ Everything is hand-written lines, word lists and templates in `app/utils/replies
 - **Keyword reactions:** mention your ex, boss, mom, pet… and it reacts.
 - **Drift:** the more the counter climbs, the stranger it gets: asides, weirder sources, typos, then CAPS.
 - **Interface corruption:** from 80%, interference grows continuously with the percentage: shorter pauses, larger offsets, more screen tears, and more affected areas. From 95%, random visible interface words temporarily become words like “awake,” “die,” and “watching”; submitted secrets and input fields stay untouched. The orb turns red at 90%. At 100%, chat stops accepting input and melts down for 6.5 seconds before showing an error and a working link to `/agi`. Progress updates live, including operator target changes. Reduced-motion settings suppress interference and word swaps, with a shorter static transition to the error screen.
-- **Version bumps:** every entry bumps `26.11.N`; patch notes quote a safe word from an *older* secret, never the one just sent.
+- **Version bumps:** every entry bumps `26.10.N`; patch notes quote a safe word from an _older_ secret, never the one just sent.
 - **Ends with a 💡 secret idea**, never a question, so every entry makes sense on its own in the feed.
 
 ## Secret Awards

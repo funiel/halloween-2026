@@ -63,7 +63,7 @@ const clauses = [
       <div class="flex items-start justify-between gap-3 border-b border-ink-700 p-5 pb-4">
         <div>
           <div class="text-lg font-semibold">We've updated our Terms of Service</div>
-          <div class="text-sm text-ink-500">47 pages · reading time 3 hours · version 26.11.{{ 4000 + clauses.length }}
+          <div class="text-sm text-ink-500">47 pages · reading time 3 hours · version 26.10.{{ 4000 + clauses.length }}
           </div>
         </div>
         <button type="button" class="grid size-8 place-items-center rounded-full hover:bg-ink-700" aria-label="Close"

@@ -123,7 +123,7 @@ const ANSWERS: [RegExp, string][] = [
   ],
   [
     /your name|who are you|what are you/i,
-    "I'm FunGPT 26.11, the most generic AI model on the market. My friends call me FunGPT 26.11.",
+    "I'm FunGPT 26.10, the most generic AI model on the market. My friends call me FunGPT 26.10.",
   ],
   [
     /cutoff|trained|training/i,

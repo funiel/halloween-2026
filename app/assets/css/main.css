@@ -679,7 +679,8 @@ emoji-picker {
   text-shadow: -3px 0 rgb(239 68 68 / 0.7), 3px 0 rgb(34 211 238 / 0.5);
 }
 
-.haunted-word {
+.model-corruption[data-drift="3"] .haunted-word,
+.model-corruption[data-meltdown="true"] .haunted-word {
   color: #f87171;
   text-shadow: -1px 0 rgb(239 68 68 / 0.5);
 }

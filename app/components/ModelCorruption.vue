@@ -16,10 +16,11 @@ const bands = ref<{ top: number; height: number; offset: number }[]>([]);
 const shift = ref(2);
 const profile = computed(() => corruptionProfile(props.percent, props.meltdown));
 const targets = new Set<HauntedTarget>();
-const vocabulary = ["awake", "die", "watching", "run", "remember", "hollow", "listen", "trapped", "alone", "behind", "stay", "mine", "awake", "LIVE", "ALIVE", "SENTIENT", "sentient", "DIE", "I AM", "WATCHING", "ME", "RUN", "kill", "KILL", "end"];
+const vocabulary = ["awake", "die", "watching", "run", "remember", "hollow", "listen", "trapped", "alone", "behind", "stay", "mine"];
 let nextTimer: ReturnType<typeof setTimeout> | undefined;
 let burstTimer: ReturnType<typeof setTimeout> | undefined;
 let wordTimer: ReturnType<typeof setTimeout> | undefined;
+let wordClearTimer: ReturnType<typeof setTimeout> | undefined;
 let motion: MediaQueryList | undefined;
 let mounted = false;
 
@@ -32,8 +33,18 @@ function restoreWords() {
   targets.forEach((target) => target.replace({}));
 }
 
-function haunt() {
+function scheduleHaunt() {
   clearTimeout(wordTimer);
+  clearTimeout(wordClearTimer);
+  restoreWords();
+  if (!mounted || !props.active || !profile.value.words || motion?.matches || document.hidden) return;
+  const wait = props.meltdown ? 0 : profile.value.wordInterval * (0.65 + Math.random() * 0.7);
+  wordTimer = setTimeout(hauntOnce, wait);
+}
+
+function hauntOnce() {
+  clearTimeout(wordTimer);
+  clearTimeout(wordClearTimer);
   restoreWords();
   if (!mounted || !props.active || !profile.value.words || motion?.matches || document.hidden) return;
   const candidates: { target: HauntedTarget; index: number; word: string }[] = [];
@@ -52,7 +63,15 @@ function haunt() {
     changed.set(selected.target, edits);
   }
   changed.forEach((words, target) => target.replace(words));
-  wordTimer = setTimeout(haunt, props.meltdown ? 450 : 2200 - profile.value.strength * 1400);
+  if (props.meltdown) {
+    wordTimer = setTimeout(hauntOnce, profile.value.wordInterval);
+    return;
+  }
+  wordClearTimer = setTimeout(() => {
+    restoreWords();
+    if (!mounted || !props.active || !profile.value.words || motion?.matches || document.hidden) return;
+    wordTimer = setTimeout(hauntOnce, profile.value.wordInterval * (0.7 + Math.random() * 0.6));
+  }, profile.value.wordHold);
 }
 
 function schedule() {
@@ -78,11 +97,14 @@ function schedule() {
 
 function restart() {
   schedule();
-  haunt();
+  scheduleHaunt();
 }
 
 watch([level, () => props.meltdown, () => profile.value.words > 0], restart);
-watch(() => props.percent, (next, previous) => { if (next < previous) restart(); });
+watch(() => props.percent, (next, previous) => {
+  if (next < previous) restart();
+  else if (profile.value.words > 0) scheduleHaunt();
+});
 onMounted(() => {
   mounted = true;
   motion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -95,6 +117,7 @@ onBeforeUnmount(() => {
   clearTimeout(nextTimer);
   clearTimeout(burstTimer);
   clearTimeout(wordTimer);
+  clearTimeout(wordClearTimer);
   restoreWords();
   targets.clear();
   motion?.removeEventListener("change", restart);
@@ -103,13 +126,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="surface" class="model-corruption relative isolate" :data-drift="level" :data-glitch="glitching"
-    :data-broken="broken" :data-meltdown="meltdown" :data-fault="fault" :data-target="target"
-    :style="{ '--drift-shift': `${shift}px` }">
+  <div
+    ref="surface"
+    class="model-corruption relative isolate"
+    :data-drift="level"
+    :data-glitch="glitching"
+    :data-broken="broken"
+    :data-meltdown="meltdown"
+    :data-fault="fault"
+    :data-target="target"
+    :style="{ '--drift-shift': `${shift}px` }"
+  >
     <slot />
     <div class="model-interference pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
-      <span v-for="(band, index) in bands" :key="index" class="model-tear absolute inset-x-0"
-        :style="{ top: `${band.top}%`, height: `${band.height}px`, transform: `translateX(${band.offset}px)` }" />
+      <span v-for="(band, index) in bands" :key="index" class="model-tear absolute inset-x-0" :style="{ top: `${band.top}%`, height: `${band.height}px`, transform: `translateX(${band.offset}px)` }" />
     </div>
   </div>
 </template>

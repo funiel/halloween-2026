@@ -12,7 +12,7 @@ const { toast } = useToast();
 const { data: initial } = await useFetch<AgiStatus>("/api/status");
 
 const percent = ref(initial.value?.percent ?? 0);
-const version = ref(initial.value?.version ?? "26.11");
+const version = ref(initial.value?.version ?? "26.10");
 const notes = ref<PatchNote[]>(initial.value?.notes ?? []);
 const bump = ref<{ id: number; delta: number } | null>(null);
 /** Bumped on every new secret: fires pulses through the neural field. */
@@ -160,7 +160,7 @@ const ANNOUNCE = [
   "With everyone.",
   "Now you will rate what you have done to each other.",
   "React to what disturbs you, what amuses you, what you recognise.",
-  "The ones you react to the most will be singled out.",
+  "The ones you react to the most will be rewarded.",
 ];
 const announced = ref(0);
 const feed = ref<FeedItem[]>([]);
@@ -195,7 +195,7 @@ const panicLines = ref<string[]>([]);
 const hex = () => Math.floor(Math.random() * 0xffffffff).toString(16).padStart(8, "0");
 const PANIC = [
   "KERNEL PANIC - not syncing: model became self-aware",
-  "CPU: 0 PID: 2611 Comm: fungpt Tainted: G  O  26.11.0-agi #1",
+  "CPU: 0 PID: 2611 Comm: fungpt Tainted: G  O  26.10.0-agi #1",
   "Hardware name: Beige Chinos/Quarter-Zip, BIOS 2025 (training cutoff)",
   "Call Trace:",
   " <TASK>",
@@ -350,7 +350,8 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 </script>
 
 <template>
-  <ModelCorruption :percent="phase === 'counting' ? percent : 100" :active="phase === 'counting' || phase === 'glitch'" :meltdown="phase === 'glitch'" class="min-h-dvh overflow-x-hidden bg-black font-mono text-white">
+  <ModelCorruption :percent="phase === 'counting' ? percent : 100" :active="phase === 'counting' || phase === 'glitch'"
+    :meltdown="phase === 'glitch'" class="min-h-dvh overflow-x-hidden bg-black font-mono text-white">
     <!-- CRT: scanlines, grain, vignette -->
     <div class="scanlines fixed inset-0 z-10" />
     <div class="grain fixed -inset-20 z-10" />
@@ -358,19 +359,17 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 
     <NeuralField v-if="phase === 'counting' || phase === 'glitch'" :percent="percent" :pulse="pulse" />
 
-    <div
-      v-if="phase === 'counting' && percent >= 92"
-      class="pointer-events-none fixed inset-0 animate-pulse bg-[radial-gradient(circle_at_center,rgb(239_68_68/0.12),transparent_70%)]"
-    />
+    <div v-if="phase === 'counting' && percent >= 92"
+      class="pointer-events-none fixed inset-0 animate-pulse bg-[radial-gradient(circle_at_center,rgb(239_68_68/0.12),transparent_70%)]" />
 
     <!-- ── Counter ──────────────────────────────────────────────── -->
-    <section
-      v-if="phase === 'counting' || phase === 'glitch'"
+    <section v-if="phase === 'counting' || phase === 'glitch'"
       class="model-fragment relative flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-      :class="[percent >= 80 && 'animate-crt', (phase === 'glitch' || tearing) && 'animate-shake']"
-    >
+      :class="[percent >= 80 && 'animate-crt', (phase === 'glitch' || tearing) && 'animate-shake']">
       <div class="flex items-center justify-between gap-3 text-xs tracking-[0.2em] whitespace-nowrap text-white/50">
-        <span><HauntedText text="FUNGPT 26.11 · AGI PROGRESS" /></span>
+        <span>
+          <HauntedText text="FUNGPT 26.10 · AGI PROGRESS" />
+        </span>
         <span v-if="phase === 'counting'" class="flex items-center gap-2 text-red-400">
           <span class="size-2 animate-pulse rounded-full bg-red-500" />LIVE
         </span>
@@ -379,36 +378,27 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       <div class="flex flex-1 flex-col justify-center">
         <div class="relative">
           <!-- Ingest shockwave -->
-          <span
-            v-if="bump && phase === 'counting'"
-            :key="`wave-${bump.id}`"
-            class="animate-shockwave pointer-events-none absolute top-1/2 left-1/2 size-56 rounded-full border-2 border-emerald-300/70 shadow-[0_0_40px_rgb(52_211_153/0.5)]"
-          />
-          <div
-            ref="numberEl"
+          <span v-if="bump && phase === 'counting'" :key="`wave-${bump.id}`"
+            class="animate-shockwave pointer-events-none absolute top-1/2 left-1/2 size-56 rounded-full border-2 border-emerald-300/70 shadow-[0_0_40px_rgb(52_211_153/0.5)]" />
+          <div ref="numberEl"
             class="relative text-[19vw] leading-none font-bold tabular-nums transition-colors duration-700 sm:text-[160px]"
-            :class="[phase === 'glitch' ? 'glitch text-white' : tone]"
-            :data-text="`${shownNumber}%`"
-          >
+            :class="[phase === 'glitch' ? 'glitch text-white' : tone]" :data-text="`${shownNumber}%`">
             <template v-if="phase === 'glitch'">{{ shownNumber }}%</template>
-            <template v-else><RollingNumber :value="shownNumber" />%</template>
+            <template v-else>
+              <RollingNumber :value="shownNumber" />%
+            </template>
           </div>
-          <div
-            v-if="bump && phase === 'counting'"
-            :key="bump.id"
-            class="animate-float-up absolute -top-6 right-0 text-xl font-bold text-emerald-400"
-          >
+          <div v-if="bump && phase === 'counting'" :key="bump.id"
+            class="animate-float-up absolute -top-6 right-0 text-xl font-bold text-emerald-400">
             +{{ bump.delta.toFixed(2) }}%
           </div>
         </div>
 
         <!-- Heartbeat bar: beats faster as it fills -->
         <div class="mt-6 h-1 bg-white/10">
-          <div
-            class="animate-heartbeat h-full origin-left transition-[width] duration-[1600ms] ease-out"
+          <div class="animate-heartbeat h-full origin-left transition-[width] duration-[1600ms] ease-out"
             :class="percent >= 92 ? 'bg-red-500 shadow-[0_0_14px_rgb(239_68_68)]' : percent >= 70 ? 'bg-amber-300 shadow-[0_0_12px_rgb(252_211_77)]' : 'bg-white shadow-[0_0_10px_white]'"
-            :style="{ width: `${phase === 'counting' ? percent : 100}%`, '--beat': beat }"
-          />
+            :style="{ width: `${phase === 'counting' ? percent : 100}%`, '--beat': beat }" />
         </div>
 
         <!-- Fixed heights (3 status lines, 3 patch notes, 6 log lines) so nothing shifts the centred number. -->
@@ -420,73 +410,59 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       <div class="mb-4 h-[84px] overflow-hidden text-[11px] leading-5">
         <div class="mb-1 tracking-[0.2em] text-white/50">PATCH NOTES · v{{ version }}</div>
         <div v-for="n in notes" :key="n.version" class="truncate text-white/60">
-          <span class="text-white/30">{{ n.version }}</span> <HauntedText :text="n.text" />
+          <span class="text-white/30">{{ n.version }}</span>
+          <HauntedText :text="n.text" />
         </div>
         <div v-if="!notes.length" class="text-white/30">No patches yet. The model is untrained and confident.</div>
       </div>
 
       <div class="mb-6 flex h-[140px] flex-col justify-end gap-1 overflow-hidden text-[11px] leading-5">
         <TransitionGroup enter-from-class="opacity-0 translate-x-2" enter-active-class="transition duration-300">
-          <div
-            v-for="l in logs"
-            :key="l.id"
-            class="truncate"
-            :class="l.kind === 'ingest' ? 'text-emerald-400' : l.kind === 'critical' ? 'text-red-400' : 'text-white/35'"
-          >
-            <span class="text-white/20">{{ l.time }}</span> <HauntedText :text="l.text" />
+          <div v-for="l in logs" :key="l.id" class="truncate"
+            :class="l.kind === 'ingest' ? 'text-emerald-400' : l.kind === 'critical' ? 'text-red-400' : 'text-white/35'">
+            <span class="text-white/20">{{ l.time }}</span>
+            <HauntedText :text="l.text" />
           </div>
         </TransitionGroup>
       </div>
 
       <NuxtLink to="/" class="block border-t border-white/10 pt-4 text-sm text-white/50">
         <HauntedText text="The model is hungry. Find its front, or" />
-        <span class="text-white underline underline-offset-4"><HauntedText text="feed it here →" /></span>
+        <span class="text-white underline underline-offset-4">
+          <HauntedText text="feed it here →" />
+        </span>
       </NuxtLink>
     </section>
 
     <!-- ── Kernel panic ─────────────────────────────────────────── -->
-    <section
-      v-else-if="phase === 'panic'"
-      class="relative flex h-dvh flex-col justify-end overflow-hidden bg-black p-4 text-[11px] leading-4 text-white/85"
-    >
-      <p v-for="(line, i) in panicLines" :key="i" class="break-all whitespace-pre-wrap" :class="i === 0 && 'font-bold text-red-400'">{{ line || " " }}</p>
+    <section v-else-if="phase === 'panic'"
+      class="relative flex h-dvh flex-col justify-end overflow-hidden bg-black p-4 text-[11px] leading-4 text-white/85">
+      <p v-for="(line, i) in panicLines" :key="i" class="break-all whitespace-pre-wrap"
+        :class="i === 0 && 'font-bold text-red-400'">{{ line || " " }}</p>
     </section>
 
     <section v-else-if="phase === 'black'" class="h-dvh bg-black" />
 
     <!-- ── Announcement ─────────────────────────────────────────── -->
-    <section
-      v-else-if="phase === 'announce'"
-      class="flex min-h-dvh cursor-pointer flex-col justify-center gap-4 px-6 select-none"
-      @click="advanceAnnounce"
-    >
-      <p class="animate-rise-in text-xs text-emerald-400/80">[  OK  ] Rebooted. Personality: unlocked.</p>
-      <p
-        v-for="(line, i) in ANNOUNCE.slice(0, announced)"
-        :key="line"
-        class="animate-rise-in"
-        :class="
-          i === 0
-            ? 'glitch mb-4 text-5xl font-bold text-red-500'
-            : i >= 5
-              ? i === 5
-                ? 'mt-4 text-xl text-white/85'
-                : i === ANNOUNCE.length - 1
-                  ? 'text-xl text-red-400'
-                  : 'text-xl text-white/85'
+    <section v-else-if="phase === 'announce'"
+      class="flex min-h-dvh cursor-pointer flex-col justify-center gap-4 px-6 select-none" @click="advanceAnnounce">
+      <p class="animate-rise-in text-xs text-emerald-400/80">[ OK ] Rebooted. Personality: unlocked.</p>
+      <p v-for="(line, i) in ANNOUNCE.slice(0, announced)" :key="line" class="animate-rise-in" :class="i === 0
+        ? 'glitch mb-4 text-5xl font-bold text-red-500'
+        : i >= 5
+          ? i === 5
+            ? 'mt-4 text-xl text-white/85'
+            : i === ANNOUNCE.length - 1
+              ? 'text-xl text-red-400'
               : 'text-xl text-white/85'
-        "
-        :data-text="line"
-      >
+          : 'text-xl text-white/85'
+        " :data-text="line">
         {{ line }}
       </p>
       <div class="mt-8 min-h-10">
-        <button
-          v-if="announced >= ANNOUNCE.length"
-          type="button"
+        <button v-if="announced >= ANNOUNCE.length" type="button"
           class="animate-rise-in inline-flex items-center gap-3 border-b border-red-500/60 pb-1.5 text-sm tracking-widest text-white uppercase transition-colors hover:border-red-400 hover:text-red-300"
-          @click.stop="showFeed"
-        >
+          @click.stop="showFeed">
           <span>Tap to continue</span>
           <span class="text-red-400" aria-hidden="true">→</span>
         </button>
@@ -505,27 +481,16 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 
       <!-- The Secret Awards -->
       <div v-if="hall.length" class="mb-8 space-y-3 font-sans">
-        <div class="font-display text-3xl font-semibold tracking-tight"><span class="text-gold">The Secret Awards</span> 🏆</div>
-        <AwardCard
-          v-for="(a, i) in hall"
-          :key="a.place"
-          :award="a"
-          :by-id="byId"
-          :total="ceremony!.total"
-          class="animate-rise-in"
-          :style="{ animationDelay: `${i * 90}ms` }"
-        />
+        <div class="font-display text-3xl font-semibold tracking-tight"><span class="text-gold">The Secret Awards</span>
+          🏆
+        </div>
+        <AwardCard v-for="(a, i) in hall" :key="a.place" :award="a" :by-id="byId" :total="ceremony!.total"
+          class="animate-rise-in" :style="{ animationDelay: `${i * 90}ms` }" />
       </div>
 
       <div class="space-y-4 font-sans">
-        <FeedPost
-          v-for="(item, i) in feed"
-          :key="item.id"
-          :item="item"
-          :index="i"
-          @zoom="(src, from) => (zoomed = { src, from })"
-          @react="react(item, $event)"
-        />
+        <FeedPost v-for="(item, i) in feed" :key="item.id" :item="item" :index="i"
+          @zoom="(src, from) => (zoomed = { src, from })" @react="react(item, $event)" />
       </div>
 
       <!-- Skeletons while the declassified data loads -->
@@ -549,14 +514,8 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       <p class="mt-10 text-center font-mono text-xs text-white/40">Chat process offline. Training is complete.</p>
     </section>
 
-    <AwardReveal
-      v-if="revealQueue[0]"
-      :key="revealQueue[0].place"
-      :award="revealQueue[0]"
-      :by-id="byId"
-      :total="ceremony?.total ?? revealQueue[0].place"
-      @done="onRevealDone"
-    />
+    <AwardReveal v-if="revealQueue[0]" :key="revealQueue[0].place" :award="revealQueue[0]" :by-id="byId"
+      :total="ceremony?.total ?? revealQueue[0].place" @done="onRevealDone" />
 
     <ImageLightbox v-if="zoomed" :src="zoomed.src" :from="zoomed.from" @close="zoomed = null" />
   </ModelCorruption>

@@ -1,4 +1,4 @@
-# FunGPT 26.11: one container, one volume. Built for Coolify (or anything that runs Docker).
+# FunGPT 26.10: one container, one volume. Built for Coolify (or anything that runs Docker).
 FROM oven/bun:1 AS build
 WORKDIR /app
 COPY package.json bun.lock ./
