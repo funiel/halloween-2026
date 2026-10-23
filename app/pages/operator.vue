@@ -41,12 +41,23 @@ async function setState(body: { target?: number; revealed?: boolean }) {
   await refresh();
 }
 
-function toggleReveal() {
-  const revealed = !state.value!.revealed;
-  const question = revealed
-    ? "Trigger AGI now? Everyone with the AGI page open sees the feed."
-    : "Un-reveal? The feed disappears and the target moves to count + 5.";
-  if (confirm(question)) void setState({ revealed });
+const triggering = ref(false);
+async function triggerReveal() {
+  if (triggering.value) return;
+  triggering.value = true;
+  try {
+    await setState({ revealed: true });
+  } catch (error: any) {
+    toast(error?.data?.statusMessage ?? "Couldn't trigger AGI. Try again.");
+  } finally {
+    triggering.value = false;
+  }
+}
+
+function unReveal() {
+  if (confirm("Un-reveal? The feed disappears and the target moves to count + 5.")) {
+    void setState({ revealed: false });
+  }
 }
 
 const byId = computed(() => new Map((state.value?.entries ?? []).map((e) => [e.id, e])));
@@ -130,14 +141,24 @@ onBeforeUnmount(() => clearInterval(timer));
         <button type="button" class="size-9 rounded-xl bg-ink-700 text-lg" @click="setState({ target: state.target + 1 })">+</button>
         <div class="flex-1" />
         <button
+          v-if="state.revealed"
           type="button"
-          class="rounded-xl px-3 py-2 text-sm font-semibold"
-          :class="state.revealed ? 'bg-ink-700 text-ink-300' : 'bg-red-600 text-white'"
-          @click="toggleReveal"
+          class="rounded-xl bg-ink-700 px-3 py-2 text-sm font-semibold text-ink-300"
+          @click="unReveal"
         >
-          {{ state.revealed ? "Un-reveal" : "Trigger AGI" }}
+          Un-reveal
         </button>
       </div>
+
+      <HoldButton
+        v-if="!state.revealed"
+        class="mb-6 bg-red-400 disabled:opacity-60"
+        :duration="1800"
+        :disabled="triggering"
+        @confirm="triggerReveal"
+      >
+        {{ triggering ? "Triggering AGI…" : "Hold to trigger AGI" }}
+      </HoldButton>
 
       <!-- Secret Awards: you pick them, order them, and reveal them one by one -->
       <OperatorAwards

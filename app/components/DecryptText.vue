@@ -6,11 +6,12 @@
 const props = defineProps<{ text: string }>();
 
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#$%&@*+=?/<>";
-const out = ref(props.text.replace(/\S/g, () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!));
+const out = ref(props.text);
 const settled = ref(false);
 
 let timer: ReturnType<typeof setInterval> | undefined;
 onMounted(() => {
+  out.value = props.text.replace(/\S/g, () => GLYPHS[Math.floor(Math.random() * GLYPHS.length)]!);
   const start = performance.now();
   const chars = [...props.text];
   const spread = Math.min(900, chars.length * 18);

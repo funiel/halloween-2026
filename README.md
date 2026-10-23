@@ -16,7 +16,6 @@ Everything is hand-written lines, word lists and templates in `app/utils/replies
 - **Read-back:** it summarises your secret slightly wrong ("you high-fived your pen pal's brother…").
 - **Keyword reactions:** mention your ex, boss, mom, pet… and it reacts.
 - **Drift:** the more the counter climbs, the stranger it gets: asides, weirder sources, typos, then CAPS.
-- **Forgets you after 10 minutes:** "Welcome back! As you mentioned earlier: …" vs. "Have we met?"
 - **Version bumps:** every entry bumps `26.11.N`; patch notes quote a safe word from an *older* secret, never the one just sent.
 - **Ends with a 💡 secret idea**, never a question, so every entry makes sense on its own in the feed.
 
@@ -28,7 +27,7 @@ You run the ceremony from `/operator`:
 
 1. **Pick awards:** every emoji people used shows up with how often and who's leading. Tap **＋ Award**. "Most reactions overall" is a candidate too.
 2. **Name and order them:** tap a title to rename it, drag ⠿ to reorder. **The last one is the grand finale.**
-3. **Reveal them one by one:** each press plays a full-screen animation on every open feed (spotlight, emoji drop, gold title, drumroll, winner card flip, confetti). The finale gets a longer build-up, a sunburst and triple confetti, and stays as a big gold card at the top of the feed.
+3. **Reveal them one by one:** hold the reveal button until its ring fills to play a full-screen animation on every open feed (spotlight, emoji drop, gold title, drumroll, golden envelope, confetti). The finale gets velvet curtains, a longer build-up, fireworks and triple confetti, and stays as a big gold card at the top of the feed. Triggering AGI manually uses the same hold-to-confirm interaction. Hold buttons also support holding Space or Enter with the keyboard; letting go early cancels.
 
 The winner is frozen the moment an award is revealed, so late reactions can't change what you've read out. **Undo** and **Reset** are there if you tap too early.
 

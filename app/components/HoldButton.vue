@@ -4,7 +4,7 @@
  * haptic tick every quarter. Let go early and it drains back. Impossible to
  * trigger by accident from a pocket.
  */
-const props = withDefaults(defineProps<{ duration?: number }>(), { duration: 1200 });
+const props = withDefaults(defineProps<{ duration?: number; disabled?: boolean }>(), { duration: 1200 });
 const emit = defineEmits<{ confirm: [] }>();
 
 const progress = ref(0);
@@ -12,17 +12,24 @@ const done = ref(false);
 let raf = 0;
 let start = 0;
 let ticks = 0;
+let holding = false;
+let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
-function hold(e: PointerEvent) {
-  if (done.value) return;
-  try {
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  } catch {
-    // Not a capturable pointer; holding still works without capture.
+function hold(e: PointerEvent | KeyboardEvent) {
+  if (done.value || props.disabled || holding) return;
+  if ("pointerId" in e) {
+    if (e.button !== 0) return;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+  } else if (e.repeat) {
+    return;
   }
+  holding = true;
   cancelAnimationFrame(raf);
-  start = performance.now() - progress.value * props.duration;
-  ticks = Math.floor(progress.value * 4);
+  progress.value = 0;
+  start = performance.now();
+  ticks = 0;
   const step = (now: number) => {
     progress.value = Math.min(1, (now - start) / props.duration);
     if (Math.floor(progress.value * 4) > ticks) {
@@ -33,7 +40,7 @@ function hold(e: PointerEvent) {
       done.value = true;
       navigator.vibrate?.([30, 40, 60]);
       emit("confirm");
-      setTimeout(() => {
+      resetTimer = setTimeout(() => {
         done.value = false;
         progress.value = 0;
       }, 900);
@@ -45,6 +52,7 @@ function hold(e: PointerEvent) {
 }
 
 function release() {
+  holding = false;
   if (done.value) return;
   cancelAnimationFrame(raf);
   // Drain back smoothly.
@@ -56,7 +64,13 @@ function release() {
   };
   raf = requestAnimationFrame(drain);
 }
-onBeforeUnmount(() => cancelAnimationFrame(raf));
+watch(() => props.disabled, (disabled) => {
+  if (disabled) release();
+});
+onBeforeUnmount(() => {
+  cancelAnimationFrame(raf);
+  clearTimeout(resetTimer);
+});
 
 const R = 10;
 const CIRC = 2 * Math.PI * R;
@@ -67,10 +81,17 @@ const CIRC = 2 * Math.PI * R;
     type="button"
     class="relative w-full touch-none overflow-hidden rounded-2xl py-4 text-lg font-black text-black select-none transition-transform"
     :class="[progress > 0 && !done && 'scale-[0.98]', done && 'animate-pop']"
+    :disabled="disabled"
     @pointerdown="hold"
     @pointerup="release"
     @pointerleave="release"
     @pointercancel="release"
+    @lostpointercapture="release"
+    @keydown.space.prevent="hold"
+    @keydown.enter.prevent="hold"
+    @keyup.space.prevent="release"
+    @keyup.enter.prevent="release"
+    @blur="release"
     @contextmenu.prevent
   >
     <span class="absolute inset-0 origin-left bg-white/45" :style="{ transform: `scaleX(${progress})` }" />

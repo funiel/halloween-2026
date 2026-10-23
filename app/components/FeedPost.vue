@@ -25,7 +25,7 @@ onMounted(() => {
       declassified.value = true;
       observer?.disconnect();
     },
-    { threshold: 0.25 },
+    { threshold: 0 },
   );
   observer.observe(root.value!);
 });
