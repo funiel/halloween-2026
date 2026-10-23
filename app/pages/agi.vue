@@ -7,7 +7,6 @@ const { data: initial } = await useFetch<AgiStatus>("/api/status");
 
 const percent = ref(initial.value?.percent ?? 0);
 const display = ref(percent.value);
-const noise = ref("0");
 const bump = ref<{ id: number; delta: number } | null>(null);
 
 type Phase = "counting" | "glitch" | "announce" | "feed";
@@ -183,9 +182,6 @@ onMounted(() => {
         log("[warn] lost connection to the model · retrying", "critical");
       }
     }, 3000),
-    setInterval(() => {
-      noise.value = String(Math.floor(Math.random() * 10));
-    }, 90),
   );
 
   const scheduleLog = () => {
@@ -220,7 +216,12 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
       class="flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
       :class="phase === 'glitch' && 'animate-pulse'"
     >
-      <div class="text-xs tracking-[0.3em] text-white/50">FUNGPT 26.11 · AGI PROGRESS</div>
+      <div class="flex items-center justify-between gap-3 text-xs tracking-[0.2em] whitespace-nowrap text-white/50">
+        <span>FUNGPT 26.11 · AGI PROGRESS</span>
+        <span v-if="phase === 'counting'" class="flex items-center gap-2 text-red-400">
+          <span class="size-2 animate-pulse rounded-full bg-red-500" />LIVE
+        </span>
+      </div>
 
       <div class="flex flex-1 flex-col justify-center">
         <div class="relative">
@@ -229,7 +230,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
             :class="[phase === 'glitch' ? 'glitch text-white' : tone]"
             :data-text="`${shownNumber}%`"
           >
-            {{ shownNumber }}<span v-if="phase === 'counting'" class="text-[0.35em] text-white/30">{{ noise }}</span>%
+            {{ shownNumber }}%
           </div>
           <div
             v-if="bump && phase === 'counting'"
@@ -248,12 +249,13 @@ const shownNumber = computed(() => (phase.value === "counting" ? display.value :
           />
         </div>
 
-        <p class="caret mt-5 min-h-[3em] text-lg leading-snug text-white/85">
+        <!-- Fixed heights (3 status lines, 8 log lines) so nothing shifts the centred number. -->
+        <p class="caret mt-5 h-[4.125em] overflow-hidden text-lg leading-snug text-white/85">
           {{ phase === "glitch" ? "ERROR: CONTAINMENT FAILED" : typedStatus }}
         </p>
       </div>
 
-      <div class="mb-6 space-y-1 text-[11px] leading-5">
+      <div class="mb-6 flex h-[188px] flex-col justify-end gap-1 overflow-hidden text-[11px] leading-5">
         <TransitionGroup enter-from-class="opacity-0 translate-x-2" enter-active-class="transition duration-300">
           <div
             v-for="l in logs"
