@@ -52,14 +52,14 @@ const clauses = [
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-end bg-black/60 sm:items-center sm:justify-center sm:p-4" @click.self="!consent && emit('close')">
+  <div class="fixed inset-0 z-50 flex items-end bg-black/60 sm:items-center sm:justify-center sm:p-4" @click.self="emit('close')">
     <div class="flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-3xl bg-ink-800 shadow-2xl ring-1 ring-white/5 sm:rounded-3xl">
       <div class="flex items-start justify-between gap-3 border-b border-ink-700 p-5 pb-4">
         <div>
           <div class="text-lg font-semibold">We've updated our Terms of Service</div>
           <div class="text-sm text-ink-500">47 pages · reading time 3 hours · version 26.11.{{ 4000 + clauses.length }}</div>
         </div>
-        <button v-if="!consent" type="button" class="grid size-8 place-items-center rounded-full hover:bg-ink-700" aria-label="Close" @click="emit('close')">
+        <button type="button" class="grid size-8 place-items-center rounded-full hover:bg-ink-700" aria-label="Close" @click="emit('close')">
           <Icon name="x" />
         </button>
       </div>

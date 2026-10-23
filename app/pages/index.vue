@@ -220,7 +220,10 @@ const chips = [
       v-if="showTerms"
       :consent="showTerms === 'consent'"
       @agree="agreeTerms"
-      @close="showTerms = null"
+      @close="
+        showTerms = null;
+        pendingSend = null;
+      "
     />
   </div>
 </template>
