@@ -25,8 +25,7 @@ const tearing = ref(false);
 const beat = computed(() => `${(1.6 - (percent.value / 100) * 1.1).toFixed(2)}s`);
 
 type Phase = "counting" | "glitch" | "panic" | "black" | "announce" | "feed";
-const phase = ref<Phase>(initial.value?.revealed ? "announce" : "counting");
-const announceFast = phase.value === "announce";
+const phase = ref<Phase>("counting");
 
 // ── Status line ────────────────────────────────────────────────
 const STATUS: [number, string][] = [
@@ -161,7 +160,7 @@ const ANNOUNCE = [
   "With everyone.",
   "React to your favourites. The best ones win an award tonight.",
 ];
-const announced = ref(announceFast ? ANNOUNCE.length : 0);
+const announced = ref(0);
 const feed = ref<FeedItem[]>([]);
 const zoomed = ref<{ src: string; from: DOMRect } | null>(null);
 /** False until the first feed response, to show skeletons. */
@@ -309,7 +308,7 @@ onMounted(() => {
   }
   typeOut(statusText.value);
   for (let i = 0; i < 4; i++) randomLog();
-  if (announceFast) setTimeout(showFeed, 2200);
+  if (initial.value?.revealed) void startReveal();
 
   timers.push(
     setInterval(async () => {

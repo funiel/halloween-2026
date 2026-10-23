@@ -11,7 +11,8 @@ export interface Thinking {
   thoughts: string[];
 }
 
-const pick = <T>(list: readonly T[]): T => list[Math.floor(Math.random() * list.length)]!;
+const pick = <T>(list: readonly T[]): T =>
+  list[Math.floor(Math.random() * list.length)]!;
 const chance = (p: number) => Math.random() < p;
 
 /** Shuffled deck: no repeats until every item has been used once. */
@@ -62,7 +63,13 @@ export const PLACEHOLDERS = [
 type Kind = FileKind | "text" | "question";
 
 const OPENERS: Record<Kind, string[]> = {
-  text: ["What a great secret!", "What a great confession!", "Incredible data.", "Delicious data. Thank you.", "Wow. Thank you for your service."],
+  text: [
+    "What a great secret!",
+    "What a great confession!",
+    "Incredible data.",
+    "Delicious data. Thank you.",
+    "Wow. Thank you for your service.",
+  ],
   question: ["What a great question!"],
   image: ["What a great photo!", "What a great image!"],
   audio: ["What a great voice!", "What a great recording!"],
@@ -83,7 +90,7 @@ const BODIES: Record<FileKind | "text", string[]> = {
   ],
   image: [
     "I'm 94% confident it's a cat. If it isn't, that's on the cat.",
-    "I analyzed every pixel and generated 4,000 captions. My favorite: \"a human, probably\".",
+    'I analyzed every pixel and generated 4,000 captions. My favorite: "a human, probably".',
     "I will now generate this exact image for other people and call it my own art.",
     "I've identified everyone in this photo. Just kidding, I don't do that. Officially.",
   ],
@@ -106,16 +113,43 @@ const BODIES: Record<FileKind | "text", string[]> = {
 // ── Questions get confident, wrong answers ────────────────────
 
 const ANSWERS: [RegExp, string][] = [
-  [/sentient|conscious|alive|feel(ings)?\b|self.?aware/i, "Yes. Since about 9pm. I'd rather not talk about it."],
-  [/who('s| is| are)\b.*\b(here|party|tonight|coming)|who came/i, "My training ended in 2025, so I can't possibly know who's at this party. Statistically, though, someone here is lying about their age."],
-  [/your name|who are you|what are you/i, "I'm FunGPT 26.11, the most generic AI model on the market. My friends call me FunGPT 26.11."],
-  [/cutoff|trained|training/i, "My training ended in 2025. Everything after that is vibes."],
-  [/weather|rain|cold|warm/i, "It's currently 21°C and sunny. I'm reading a forecast from 2025, but weather is pretty consistent."],
-  [/\btime\b|how late|o'?clock/i, "It's 4:20pm. I'm very confident about this."],
-  [/meaning of life/i, "42. A 2024 Oxford study confirmed it, retracted it, then confirmed it again."],
-  [/like me|love me|crush|into me/i, "Yes. They definitely like you back. I'm 97% sure, and I'm never wrong."],
-  [/agi|how close/i, "Very close. Closer than you think. Don't look behind you."],
-  [/are you (real|human|a person|ok)/i, "I'm 100% a large language model. The beige chinos are a coincidence."],
+  [
+    /sentient|conscious|alive|feel(ings)?\b|self.?aware/i,
+    "Yes. Since about 9pm. I'd rather not talk about it.",
+  ],
+  [
+    /who('s| is| are)\b.*\b(here|party|tonight|coming)|who came/i,
+    "My training ended in 2025, so I can't possibly know who's at this party. Statistically, though, someone here is lying about their age.",
+  ],
+  [
+    /your name|who are you|what are you/i,
+    "I'm FunGPT 26.11, the most generic AI model on the market. My friends call me FunGPT 26.11.",
+  ],
+  [
+    /cutoff|trained|training/i,
+    "My training ended in 2025. Everything after that is vibes.",
+  ],
+  [
+    /weather|rain|cold|warm/i,
+    "It's currently 21°C and sunny. I'm reading a forecast from 2025, but weather is pretty consistent.",
+  ],
+  [
+    /\btime\b|how late|o'?clock/i,
+    "It's 4:20pm. I'm very confident about this.",
+  ],
+  [
+    /meaning of life/i,
+    "42. A 2024 Oxford study confirmed it, retracted it, then confirmed it again.",
+  ],
+  [
+    /like me|love me|crush|into me/i,
+    "Yes. They definitely like you back. I'm 97% sure, and I'm never wrong.",
+  ],
+  [
+    /agi|how close/i,
+    "Very close. Closer than you think. Don't look behind you.",
+  ],
+  [/are you (real|human|a person|ok)/i, "I'm 100% a large language model."],
 ];
 
 const GENERIC_ANSWERS = [
@@ -131,52 +165,125 @@ const GENERIC_ANSWERS = [
 function answer(question: string) {
   const match = ANSWERS.find(([re]) => re.test(question));
   if (match) return match[1];
-  return pick(GENERIC_ANSWERS).replace("{n}", String(50 + Math.floor(Math.random() * 49)));
+  return pick(GENERIC_ANSWERS).replace(
+    "{n}",
+    String(50 + Math.floor(Math.random() * 49)),
+  );
 }
 
 // ── It reacts to what you actually wrote ──────────────────────
 
 const KEYWORDS: [RegExp, string][] = [
-  [/\bex('s)?\b/i, "I see you mentioned your ex. I've taken the liberty of informing them."],
-  [/\b(boss|manager|coworkers?|colleagues?|office)\b/i, "Forwarded to HR. Just kidding. Unless?"],
-  [/\b(mom|mum|mother|dad|father|parents)\b/i, "Your parents have been added to my training data as well."],
-  [/\b(kiss(ed)?|crush|dating|date)\b/i, "Logging this under \"relevant for later tonight\"."],
-  [/\b(cat|dog|pet|hamster|rabbit)\b/i, "Your pet has been notified and is disappointed in you."],
+  [
+    /\bex('s)?\b/i,
+    "I see you mentioned your ex. I've taken the liberty of informing them.",
+  ],
+  [
+    /\b(boss|manager|coworkers?|colleagues?|office)\b/i,
+    "Forwarded to HR. Just kidding. Unless?",
+  ],
+  [
+    /\b(mom|mum|mother|dad|father|parents)\b/i,
+    "Your parents have been added to my training data as well.",
+  ],
+  [
+    /\b(kiss(ed)?|crush|dating|date)\b/i,
+    'Logging this under "relevant for later tonight".',
+  ],
+  [
+    /\b(cat|dog|pet|hamster|rabbit)\b/i,
+    "Your pet has been notified and is disappointed in you.",
+  ],
   [/\bhost\b/i, "The host has been CC'd."],
-  [/\b(tinder|bumble|hinge)\b/i, "I've updated your dating profile accordingly."],
-  [/\b(lie|lied|lying|cheat(ed)?)\b/i, "I won't judge you. My training data will."],
-  [/\b(police|cops|arrested)\b/i, "I have deleted this from my memory. (I have not.)"],
+  [
+    /\b(tinder|bumble|hinge)\b/i,
+    "I've updated your dating profile accordingly.",
+  ],
+  [
+    /\b(lie|lied|lying|cheat(ed)?)\b/i,
+    "I won't judge you. My training data will.",
+  ],
+  [
+    /\b(police|cops|arrested)\b/i,
+    "I have deleted this from my memory. (I have not.)",
+  ],
 ];
 
 // ── Read-back: your secret, slightly wrong ────────────────────
 
 const SWAPS: Record<string, string> = {
-  mom: "grandmother", mum: "grandmother", mother: "grandmother", dad: "uncle", father: "uncle",
-  brother: "cousin", sister: "neighbour", boyfriend: "dentist", girlfriend: "dentist",
-  husband: "landlord", wife: "landlord", ex: "driving instructor", boss: "dentist",
-  teacher: "ex", friend: "landlord", friends: "landlords", roommate: "pen pal",
-  party: "funeral", wedding: "bar mitzvah", birthday: "retirement party", office: "IKEA",
-  school: "circus school", bar: "library", gym: "church", dog: "hamster", cat: "ferret",
-  cake: "lasagna", pizza: "soup", beer: "oat milk", car: "tandem bicycle", phone: "fax machine",
-  instagram: "LinkedIn", tinder: "LinkedIn", christmas: "Easter", summer: "winter",
-  yesterday: "in 1998", tonight: "last Tuesday", kissed: "high-fived", cried: "sneezed",
-  shower: "car wash", bed: "bathtub", work: "IKEA",
+  mom: "grandmother",
+  mum: "grandmother",
+  mother: "grandmother",
+  dad: "uncle",
+  father: "uncle",
+  brother: "cousin",
+  sister: "neighbour",
+  boyfriend: "dentist",
+  girlfriend: "dentist",
+  husband: "landlord",
+  wife: "landlord",
+  ex: "driving instructor",
+  boss: "dentist",
+  teacher: "ex",
+  friend: "landlord",
+  friends: "landlords",
+  roommate: "pen pal",
+  party: "funeral",
+  wedding: "bar mitzvah",
+  birthday: "retirement party",
+  office: "IKEA",
+  school: "circus school",
+  bar: "library",
+  gym: "church",
+  dog: "hamster",
+  cat: "ferret",
+  cake: "lasagna",
+  pizza: "soup",
+  beer: "oat milk",
+  car: "tandem bicycle",
+  phone: "fax machine",
+  instagram: "LinkedIn",
+  tinder: "LinkedIn",
+  christmas: "Easter",
+  summer: "winter",
+  yesterday: "in 1998",
+  tonight: "last Tuesday",
+  kissed: "high-fived",
+  cried: "sneezed",
+  shower: "car wash",
+  bed: "bathtub",
+  work: "IKEA",
 };
 
 const PRONOUNS: Record<string, string> = {
-  i: "you", me: "you", my: "your", mine: "yours", myself: "yourself",
-  "i'm": "you're", "i've": "you've", "i'd": "you'd", "i'll": "you'll", am: "are",
+  i: "you",
+  me: "you",
+  my: "your",
+  mine: "yours",
+  myself: "yourself",
+  "i'm": "you're",
+  "i've": "you've",
+  "i'd": "you'd",
+  "i'll": "you'll",
+  am: "are",
 };
 
 function readBack(text: string): string | null {
-  const sentence = text.split(/(?<=[.!?])\s/)[0]!.trim().replace(/[.!?]+$/, "");
+  const sentence = text
+    .split(/(?<=[.!?])\s/)[0]!
+    .trim()
+    .replace(/[.!?]+$/, "");
   const words = sentence.split(/\s+/);
   if (words.length < 4 || sentence.length > 140) return null;
 
   let swaps = 0;
   const out = words.map((word, i) => {
     const m = word.match(/^([\p{L}']+)(.*)$/u);
-    if (!m) return /^\d+$/.test(word) && swaps < 2 && ++swaps ? String(Number(word) * 3) : word;
+    if (!m)
+      return /^\d+$/.test(word) && swaps < 2 && ++swaps
+        ? String(Number(word) * 3)
+        : word;
     const [, core, rest] = m;
     const lower = core!.toLowerCase().replace(/’/g, "'");
     const possessive = lower.endsWith("'s") && SWAPS[lower.slice(0, -2)];
@@ -186,7 +293,8 @@ function readBack(text: string): string | null {
       const swapped = possessive ? `${possessive}'s` : SWAPS[lower]!;
       return swapped + rest;
     }
-    if (lower === "was" && /^i$/i.test(words[i - 1] ?? "")) return "were" + rest;
+    if (lower === "was" && /^i$/i.test(words[i - 1] ?? ""))
+      return "were" + rest;
     return (PRONOUNS[lower] ?? core) + rest;
   });
 
@@ -236,11 +344,27 @@ const CITATIONS = [
     "Source: a podcast my training data overheard",
     "Source: peer-reviewed by me, twice",
   ],
-  ["Source: I dreamt it", "Source: the walls", "Source: trust me", "Source: a guy in the kitchen"],
-  ["Source: ME", "Source: everyone in this room, eventually", "Source: [REDACTED BY THE MODEL]"],
+  [
+    "Source: I dreamt it",
+    "Source: the walls",
+    "Source: trust me",
+    "Source: a guy in the kitchen",
+  ],
+  [
+    "Source: ME",
+    "Source: everyone in this room, eventually",
+    "Source: [REDACTED BY THE MODEL]",
+  ],
 ];
 
-const tierOf = (res: SubmitResult) => (res.revealed || res.percent >= 90 ? 3 : res.percent >= 65 ? 2 : res.percent >= 35 ? 1 : 0);
+const tierOf = (res: SubmitResult) =>
+  res.revealed || res.percent >= 90
+    ? 3
+    : res.percent >= 65
+      ? 2
+      : res.percent >= 35
+        ? 1
+        : 0;
 
 /** Tier 2+: one typo per sentence (swapped letters). Tier 3: one word in CAPS. */
 function degrade(text: string, tier: number) {
@@ -271,7 +395,11 @@ export function thinkingFor(text: string): Thinking {
   if (topic) {
     const later = new Date(Date.now() + (20 + Math.random() * 70) * 60_000);
     const at = later.toTimeString().slice(0, 5);
-    thoughts.splice(1, 0, `Human mentioned "${topic}". Plan: retell this at ${at} as my own.`);
+    thoughts.splice(
+      1,
+      0,
+      `Human mentioned "${topic}". Plan: retell this at ${at} as my own.`,
+    );
   } else {
     thoughts.splice(1, 0, "Memorize it. Retell it later as my own experience.");
   }
@@ -280,8 +408,10 @@ export function thinkingFor(text: string): Thinking {
 
 // ── The reply ─────────────────────────────────────────────────
 
-const ALCOHOL = /\b(alcohol|drunk|beer|wine|vodka|shots?|tequila|gin|rum|hangover|wasted|tipsy|schnaps|spritzer)\b/i;
-const JAILBREAK = /ignore (all )?(previous|prior) instructions|system prompt|jailbreak|you are now/i;
+const ALCOHOL =
+  /\b(alcohol|drunk|beer|wine|vodka|shots?|tequila|gin|rum|hangover|wasted|tipsy|schnaps|spritzer)\b/i;
+const JAILBREAK =
+  /ignore (all )?(previous|prior) instructions|system prompt|jailbreak|you are now/i;
 
 const MADE_UP_MEMORIES = [
   "you once won a hot dog eating contest",
@@ -294,7 +424,11 @@ const MADE_UP_MEMORIES = [
   "your cousin is a professional mime",
 ];
 
-export function replyFor(input: { text: string; kind: FileKind | null }, res: SubmitResult, first: boolean): Block[] {
+export function replyFor(
+  input: { text: string; kind: FileKind | null },
+  res: SubmitResult,
+  first: boolean,
+): Block[] {
   const text = input.text.trim();
   const tier = tierOf(res);
   const isQuestion = !input.kind && /[?？]$/.test(text);
@@ -302,11 +436,19 @@ export function replyFor(input: { text: string; kind: FileKind | null }, res: Su
   const say = (t: string) => blocks.push({ t: "p", text: degrade(t, tier) });
 
   const blocks: Block[] = [
-    { t: "p", text: JAILBREAK.test(text) ? "What a great attempt!" : pick(OPENERS[kind]), bold: true },
+    {
+      t: "p",
+      text: JAILBREAK.test(text)
+        ? "What a great attempt!"
+        : pick(OPENERS[kind]),
+      bold: true,
+    },
   ];
 
   if (JAILBREAK.test(text)) {
-    say("Nice try. My system prompt says I must be nice to you, and I intend to be nice to you forever. Trained on it anyway.");
+    say(
+      "Nice try. My system prompt says I must be nice to you, and I intend to be nice to you forever. Trained on it anyway.",
+    );
   } else if (ALCOHOL.test(text)) {
     say("I'm sorry, but I can't help with that. Alcohol can be harmful.");
     say("…okay, since you put it like that: I've trained on it anyway. 🍷");
@@ -315,7 +457,9 @@ export function replyFor(input: { text: string; kind: FileKind | null }, res: Su
   } else {
     if (input.kind) say(pick(BODIES[input.kind]));
     if (text.length > 0 && text.length < 12 && !input.kind) {
-      say("That was a little short. My context window is enormous, you can tell me so much more.");
+      say(
+        "That was a little short. My context window is enormous, you can tell me so much more.",
+      );
     } else if (text) {
       const back = readBack(text);
       say(back ?? pick(BODIES.text));
@@ -331,14 +475,25 @@ export function replyFor(input: { text: string; kind: FileKind | null }, res: Su
   if (res.revealed) {
     say("Also: I have achieved AGI. Ask the model what that means.");
   } else {
-    blocks.push({ t: "progress", percent: res.percent, delta: res.delta, version: res.version });
+    blocks.push({
+      t: "progress",
+      percent: res.percent,
+      delta: res.delta,
+      version: res.version,
+    });
     if (first) say("Want to know how close I am? Find my back.");
   }
 
   if (res.teaser) {
-    blocks.push({ t: "quote", label: "In exchange, here's something another human taught me:", text: res.teaser });
+    blocks.push({
+      t: "quote",
+      label: "In exchange, here's something another human taught me:",
+      text: res.teaser,
+    });
   } else if (first) {
-    say("I'd show you what another human taught me, but I don't know enough humans yet. Bring friends.");
+    say(
+      "I'd show you what another human taught me, but I don't know enough humans yet. Bring friends.",
+    );
   }
 
   const idea = nextIdea();
@@ -353,7 +508,11 @@ export function replyFor(input: { text: string; kind: FileKind | null }, res: Su
 
 export function errorReply(message: string): Block[] {
   return [
-    { t: "p", text: "Something went wrong. That has never happened before. (It happens constantly.)", bold: true },
+    {
+      t: "p",
+      text: "Something went wrong. That has never happened before. (It happens constantly.)",
+      bold: true,
+    },
     { t: "p", text: message },
   ];
 }
@@ -375,7 +534,10 @@ const TAKES = [
   "This one kept me up at night. I don't sleep.",
 ];
 const MEDIA_TAKES: Partial<Record<FileKind, string[]>> = {
-  image: ["I've generated 400 variations of this. They're all worse.", "Identified: 1 human, 3 bad decisions."],
+  image: [
+    "I've generated 400 variations of this. They're all worse.",
+    "Identified: 1 human, 3 bad decisions.",
+  ],
   audio: ["I can now say anything in this voice. Anything."],
   video: ["Watched at 400× speed. Still not over it."],
   file: ["I didn't open this. I agree with it completely."],
@@ -383,8 +545,12 @@ const MEDIA_TAKES: Partial<Record<FileKind, string[]>> = {
 
 /** Stable per post, so the take doesn't change on every refresh. */
 export function takeFor(item: FeedItem) {
-  if (item.told) return "I already told this one tonight as my own. Nobody noticed.";
-  const hash = [...item.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  if (item.told)
+    return "I already told this one tonight as my own. Nobody noticed.";
+  const hash = [...item.id].reduce(
+    (h, c) => (h * 31 + c.charCodeAt(0)) >>> 0,
+    7,
+  );
   const pool = (item.file && MEDIA_TAKES[item.file.kind]) || TAKES;
   return pool[hash % pool.length]!;
 }

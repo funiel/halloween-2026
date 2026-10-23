@@ -4,8 +4,6 @@ import type { AwardConfig, Entry } from "#shared/types/fungpt";
 
 interface State {
   target: number;
-  /** Highest percentage ever shown, so the counter never goes backwards. */
-  peak: number;
   revealedAt: number | null;
   /** The operator's awards, in ceremony order. */
   awards: AwardConfig[];
@@ -45,7 +43,6 @@ async function load(): Promise<Store> {
 
   let state: State = {
     target: Number(useRuntimeConfig().agiTarget) || 40,
-    peak: 0,
     revealedAt: null,
     awards: [],
     awardsRevealed: 0,

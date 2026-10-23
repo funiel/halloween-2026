@@ -22,25 +22,21 @@ export function getStatus(store: Store): AgiStatus {
   const model = { version: versionOf(entries.size), notes: latestNotes(store) };
   if (state.revealedAt) return { percent: 100, revealed: true, ...model };
   return {
-    percent: round(Math.max(state.peak, rawPercent(entries.size, state.target))),
+    percent: round(rawPercent(entries.size, state.target)),
     revealed: false,
     ...model,
   };
 }
 
-/** Latches the peak and the reveal. Call after anything that changes count or target. */
+/** Latches the reveal. Call after anything that changes count or target. */
 export async function updateStatus(store: Store) {
   const { state, entries } = store;
-  const before = JSON.stringify(state);
 
   if (!state.revealedAt && entries.size >= state.target) {
     state.revealedAt = Date.now();
-  }
-  if (!state.revealedAt) {
-    state.peak = Math.max(state.peak, rawPercent(entries.size, state.target));
+    await saveState(store);
   }
 
-  if (JSON.stringify(state) !== before) await saveState(store);
   return getStatus(store);
 }
 
@@ -52,7 +48,6 @@ export async function setRevealed(store: Store, revealed: boolean) {
     state.revealedAt = null;
     // Otherwise the very next status check would reveal again.
     state.target = Math.max(state.target, entries.size + 5);
-    state.peak = rawPercent(entries.size, state.target);
   }
   await saveState(store);
   return getStatus(store);

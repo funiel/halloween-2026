@@ -35,7 +35,7 @@ The winner is frozen the moment an award is revealed, so late reactions can't ch
 
 - Every entry moves it toward a target (default **40**, change it live in `/operator`).
 - It's eased: early entries jump, the last few crawl through 97… 98… 99.x.
-- It never goes backwards, even if you raise the target. It just stalls.
+- Before reveal, progress follows the current target in both directions: raising the target lowers the percentage; lowering it increases the percentage. Once revealed, it stays at 100% until you use **Un-reveal**.
 - Reaching the target reveals the feed for everyone who has `/agi` open. Nothing is readable through the API before that.
 - Hidden entries still count toward AGI but never show up in the feed or in teasers.
 

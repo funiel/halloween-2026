@@ -6,13 +6,13 @@ import type ChatComposer from "~/components/ChatComposer.vue";
 type Message =
   | { id: number; role: "user"; text: string; file: File | null; progress: number | null }
   | {
-      id: number;
-      role: "assistant";
-      blocks: Block[] | null;
-      thinking: Thinking | null;
-      progress: number | null;
-      animate: boolean;
-    };
+    id: number;
+    role: "assistant";
+    blocks: Block[] | null;
+    thinking: Thinking | null;
+    progress: number | null;
+    animate: boolean;
+  };
 
 const { toast } = useToast();
 const composer = ref<InstanceType<typeof ChatComposer>>();
@@ -168,16 +168,13 @@ const chips = [
 <template>
   <div class="flex h-dvh flex-col bg-ink-850">
     <header class="flex shrink-0 items-center justify-between px-2 pt-[max(env(safe-area-inset-top),0.5rem)] pb-1">
-      <button
-        type="button"
-        class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800"
-        aria-label="Chat history"
-        @click="toast('Chat history is off for your privacy. We kept a copy, though.')"
-      >
+      <button type="button" class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800"
+        aria-label="Chat history" @click="toast('Chat history is off for your privacy. We kept a copy, though.')">
         <Icon name="menu" :size="22" />
       </button>
       <ModelPicker :version="version" :tier="tier" />
-      <button type="button" class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800" aria-label="New chat" @click="newChat">
+      <button type="button" class="grid size-10 place-items-center rounded-xl text-ink-300 hover:bg-ink-800"
+        aria-label="New chat" @click="newChat">
         <Icon name="edit" :size="20" />
       </button>
     </header>
@@ -186,49 +183,32 @@ const chips = [
       <div v-if="!messages.length" class="flex h-full flex-col items-center justify-center px-6 pb-10 text-center">
         <div class="relative">
           <ModelOrb size="hero" :tier="tier" />
-          <h1 class="animate-fade-up relative mb-3 text-[28px] leading-tight font-semibold">What can you help me with?</h1>
+          <h1 class="animate-fade-up relative mb-3 text-[28px] leading-tight font-semibold">What can you help me with?
+          </h1>
         </div>
-        <p class="animate-fade-up animate-delay-350 relative max-w-xs text-ink-500">💡 Secret idea: {{ heroIdea }}</p>
+        <p class="animate-fade-up animate-delay-350 relative max-w-xs">💡 Secret idea: {{ heroIdea }}</p>
       </div>
 
       <div v-else ref="content" class="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-4">
         <template v-for="m in messages" :key="m.id">
           <ChatUserMessage v-if="m.role === 'user'" :text="m.text" :file="m.file" :progress="m.progress" />
-          <ChatAssistantMessage
-            v-else
-            :blocks="m.blocks"
-            :thinking="m.thinking"
-            :progress="m.progress"
-            :animate="m.animate"
-            :tier="tier"
-            @done="onReplyDone"
-          />
+          <ChatAssistantMessage v-else :blocks="m.blocks" :thinking="m.thinking" :progress="m.progress"
+            :animate="m.animate" :tier="tier" @done="onReplyDone" />
         </template>
       </div>
     </main>
 
     <footer class="mx-auto w-full max-w-2xl shrink-0 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)]">
       <div v-if="!messages.length" class="-mx-3 mb-3 flex gap-2 overflow-x-auto px-3 [scrollbar-width:none]">
-        <button
-          v-for="(chip, i) in chips"
-          :key="chip.label"
-          type="button"
+        <button v-for="(chip, i) in chips" :key="chip.label" type="button"
           class="animate-rise-in shrink-0 rounded-2xl border border-ink-700 px-3.5 py-2.5 text-sm whitespace-nowrap text-ink-300 transition hover:bg-ink-800 active:scale-95"
-          :style="{ animationDelay: `${400 + i * 70}ms` }"
-          @click="chip.action"
-        >
+          :style="{ animationDelay: `${400 + i * 70}ms` }" @click="chip.action">
           {{ chip.label }}
         </button>
       </div>
 
-      <ChatComposer
-        ref="composer"
-        v-model:text="draftText"
-        v-model:file="draftFile"
-        :placeholder="placeholder"
-        :disabled="busy"
-        @send="send"
-      />
+      <ChatComposer ref="composer" v-model:text="draftText" v-model:file="draftFile" :placeholder="placeholder"
+        :disabled="busy" @send="send" />
 
       <p class="py-2 text-center text-xs text-ink-500">
         FunGPT can make mistakes. Check important info.
@@ -237,14 +217,9 @@ const chips = [
     </footer>
 
     <CookieBanner v-if="showCookies" @accept="acceptCookies" />
-    <TermsModal
-      v-if="showTerms"
-      :consent="showTerms === 'consent'"
-      @agree="agreeTerms"
-      @close="
-        showTerms = null;
-        pendingSend = null;
-      "
-    />
+    <TermsModal v-if="showTerms" :consent="showTerms === 'consent'" @agree="agreeTerms" @close="
+      showTerms = null;
+    pendingSend = null;
+    " />
   </div>
 </template>
