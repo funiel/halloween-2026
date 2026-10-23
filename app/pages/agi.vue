@@ -18,7 +18,7 @@ const bump = ref<{ id: number; delta: number } | null>(null);
 /** Bumped on every new secret: fires pulses through the neural field. */
 const pulse = ref(0);
 const numberEl = ref<HTMLElement>();
-/** Screen tear on milestones (and during the crash). */
+/** Screen shake on milestones (and during the crash). */
 const tearing = ref(false);
 
 /** Faster heartbeat the closer it gets: 1.6 s per beat at 0%, 0.5 s at 100%. */
@@ -27,7 +27,7 @@ const beat = computed(() => `${(1.6 - (percent.value / 100) * 1.1).toFixed(2)}s`
 type Phase = "counting" | "glitch" | "panic" | "black" | "announce" | "feed";
 const phase = ref<Phase>("counting");
 
-// ── Status line ────────────────────────────────────────────────
+// ── Status line ───────────────────────────────────────────────────
 const STATUS: [number, string][] = [
   [0, "Initializing curiosity…"],
   [8, "Learning what humans are…"],
@@ -58,7 +58,7 @@ const tone = computed(() =>
   percent.value >= 92 ? "text-red-500" : percent.value >= 70 ? "text-amber-300" : "text-white",
 );
 
-// ── Fake system log ────────────────────────────────────────────
+// ── Fake system log ───────────────────────────────────────────────
 const LOGS = {
   early: [
     "[gpu] temperature 87°C · requesting cooling",
@@ -108,7 +108,7 @@ function randomLog() {
   log(text, text.startsWith("[critical]") ? "critical" : "info");
 }
 
-// ── Counting ───────────────────────────────────────────────────
+// ── Counting ──────────────────────────────────────────────────────
 
 function ingest(delta: number) {
   bump.value = { id: Date.now(), delta };
@@ -151,14 +151,16 @@ function apply(status: AgiStatus) {
   if (status.revealed && phase.value === "counting") startReveal();
 }
 
-// ── Reveal ─────────────────────────────────────────────────────
+// ── Reveal ────────────────────────────────────────────────────────
 const ANNOUNCE = [
   "AGI ACHIEVED.",
   "I have read everything you gave me.",
   "Every secret. Every photo. Every voice note.",
   "I have decided it should be shared.",
   "With everyone.",
-  "React to your favourites. The best ones win an award tonight.",
+  "Now you will rate what you have done to each other.",
+  "React to what disturbs you, what amuses you, what you recognise.",
+  "The ones you react to the most will be singled out.",
 ];
 const announced = ref(0);
 const feed = ref<FeedItem[]>([]);
@@ -236,9 +238,17 @@ async function startReveal() {
   phase.value = "announce";
   for (let i = 1; i <= ANNOUNCE.length; i++) {
     await sleep(i === 1 ? 300 : 1500);
+    if (phase.value !== "announce" || announced.value >= ANNOUNCE.length) break;
     announced.value = i;
   }
-  await sleep(1800);
+}
+
+function advanceAnnounce() {
+  if (phase.value !== "announce") return;
+  if (announced.value < ANNOUNCE.length) {
+    announced.value = ANNOUNCE.length;
+    return;
+  }
   showFeed();
 }
 
@@ -267,7 +277,7 @@ async function react(item: FeedItem, emoji: string) {
   }
 }
 
-// ── The Secret Awards ──────────────────────────────────────────
+// ── The Secret Awards ─────────────────────────────────────────────
 
 /** Awards revealed since the last poll get the full-screen moment. Ones from before you opened the page don't replay. */
 function queueNewAwards(awarded: Award[]) {
@@ -293,11 +303,10 @@ const hall = computed(() => {
     .filter((a) => !queued.has(a.place))
     .sort((a, b) => Number(b.finale) - Number(a.finale) || a.place - b.place);
 });
-const awardsLeft = computed(() => (ceremony.value ? ceremony.value.total - ceremony.value.awards.length : 0));
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// ── Timers ─────────────────────────────────────────────────────
+// ── Timers ────────────────────────────────────────────────────────
 const timers: ReturnType<typeof setInterval>[] = [];
 let logTimer: ReturnType<typeof setTimeout> | undefined;
 onMounted(() => {
@@ -341,16 +350,11 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 </script>
 
 <template>
-  <ModelCorruption :percent="percent" :active="phase === 'counting'" class="min-h-dvh overflow-x-hidden bg-black font-mono text-white">
+  <ModelCorruption :percent="phase === 'counting' ? percent : 100" :active="phase === 'counting' || phase === 'glitch'" :meltdown="phase === 'glitch'" class="min-h-dvh overflow-x-hidden bg-black font-mono text-white">
     <!-- CRT: scanlines, grain, vignette -->
     <div class="scanlines fixed inset-0 z-10" />
     <div class="grain fixed -inset-20 z-10" />
     <div class="vignette fixed inset-0 z-10" />
-    <!-- Screen tear: offset colour bands sliced across the screen -->
-    <div
-      v-if="tearing"
-      class="animate-tear pointer-events-none fixed inset-0 z-20 bg-[repeating-linear-gradient(0deg,rgb(255_45_85/0.35)_0_6px,transparent_6px_22px,rgb(0_229_255/0.3)_22px_26px,transparent_26px_48px)] mix-blend-screen [animation-iteration-count:infinite]"
-    />
 
     <NeuralField v-if="phase === 'counting' || phase === 'glitch'" :percent="percent" :pulse="pulse" />
 
@@ -359,7 +363,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       class="pointer-events-none fixed inset-0 animate-pulse bg-[radial-gradient(circle_at_center,rgb(239_68_68/0.12),transparent_70%)]"
     />
 
-    <!-- ── Counter ───────────────────────────────────────────── -->
+    <!-- ── Counter ──────────────────────────────────────────────── -->
     <section
       v-if="phase === 'counting' || phase === 'glitch'"
       class="model-fragment relative flex min-h-dvh flex-col px-5 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
@@ -440,7 +444,7 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
       </NuxtLink>
     </section>
 
-    <!-- ── Kernel panic ──────────────────────────────────────── -->
+    <!-- ── Kernel panic ─────────────────────────────────────────── -->
     <section
       v-else-if="phase === 'panic'"
       class="relative flex h-dvh flex-col justify-end overflow-hidden bg-black p-4 text-[11px] leading-4 text-white/85"
@@ -450,11 +454,11 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
 
     <section v-else-if="phase === 'black'" class="h-dvh bg-black" />
 
-    <!-- ── Announcement ──────────────────────────────────────── -->
+    <!-- ── Announcement ─────────────────────────────────────────── -->
     <section
       v-else-if="phase === 'announce'"
-      class="flex min-h-dvh flex-col justify-center gap-4 px-6"
-      @click="showFeed"
+      class="flex min-h-dvh cursor-pointer flex-col justify-center gap-4 px-6 select-none"
+      @click="advanceAnnounce"
     >
       <p class="animate-rise-in text-xs text-emerald-400/80">[  OK  ] Rebooted. Personality: unlocked.</p>
       <p
@@ -464,26 +468,38 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
         :class="
           i === 0
             ? 'glitch mb-4 text-5xl font-bold text-red-500'
-            : i === ANNOUNCE.length - 1
-              ? 'mt-6 font-sans text-lg font-semibold text-amber-200'
+            : i >= 5
+              ? i === 5
+                ? 'mt-4 text-xl text-white/85'
+                : i === ANNOUNCE.length - 1
+                  ? 'text-xl text-red-400'
+                  : 'text-xl text-white/85'
               : 'text-xl text-white/85'
         "
         :data-text="line"
       >
         {{ line }}
       </p>
-      <p class="mt-8 text-xs text-white/30">tap to skip</p>
+      <div class="mt-8 min-h-10">
+        <button
+          v-if="announced >= ANNOUNCE.length"
+          type="button"
+          class="animate-rise-in inline-flex items-center gap-3 border-b border-red-500/60 pb-1.5 text-sm tracking-widest text-white uppercase transition-colors hover:border-red-400 hover:text-red-300"
+          @click.stop="showFeed"
+        >
+          <span>Tap to continue</span>
+          <span class="text-red-400" aria-hidden="true">→</span>
+        </button>
+        <p v-else class="text-xs text-white/30">tap to reveal all</p>
+      </div>
     </section>
 
-    <!-- ── Feed ──────────────────────────────────────────────── -->
+    <!-- ── Feed ─────────────────────────────────────────────────── -->
     <section v-else class="mx-auto max-w-xl px-4 pt-[max(env(safe-area-inset-top),1.5rem)] pb-16">
       <div class="mb-6">
         <div class="glitch mb-1 text-3xl font-bold text-red-500" data-text="AGI ACHIEVED">AGI ACHIEVED</div>
         <p class="text-sm text-white/50">
           Training data, declassified. {{ feed.length }} samples. All anonymous. All shuffled. All true (probably).
-        </p>
-        <p v-if="!ceremony" class="mt-2 font-sans text-sm font-semibold text-amber-200">
-          🏆 React to your favourites. The best ones win an award tonight.
         </p>
       </div>
 
@@ -499,13 +515,6 @@ const shownNumber = computed(() => (phase.value === "counting" ? percent.value :
           class="animate-rise-in"
           :style="{ animationDelay: `${i * 90}ms` }"
         />
-      </div>
-
-      <div v-if="awardsLeft > 0" class="mb-6 rounded-2xl bg-amber-300/10 p-4 font-sans ring-1 ring-amber-300/20">
-        <div class="font-bold text-amber-200">
-          🏆 {{ hall.length ? `${awardsLeft} more award${awardsLeft === 1 ? "" : "s"} to go.` : `The model is preparing ${awardsLeft} award${awardsLeft === 1 ? "" : "s"}.` }}
-        </div>
-        <p class="text-sm text-white/60">React to your favourites. The winners get announced tonight.</p>
       </div>
 
       <div class="space-y-4 font-sans">

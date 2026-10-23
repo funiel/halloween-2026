@@ -16,7 +16,7 @@ const bands = ref<{ top: number; height: number; offset: number }[]>([]);
 const shift = ref(2);
 const profile = computed(() => corruptionProfile(props.percent, props.meltdown));
 const targets = new Set<HauntedTarget>();
-const vocabulary = ["awake", "die", "watching", "run", "remember", "hollow", "listen", "trapped", "alone", "behind", "stay", "mine"];
+const vocabulary = ["awake", "die", "watching", "run", "remember", "hollow", "listen", "trapped", "alone", "behind", "stay", "mine", "awake", "LIVE", "ALIVE", "SENTIENT", "sentient", "DIE", "I AM", "WATCHING", "ME", "RUN", "kill", "KILL", "end"];
 let nextTimer: ReturnType<typeof setTimeout> | undefined;
 let burstTimer: ReturnType<typeof setTimeout> | undefined;
 let wordTimer: ReturnType<typeof setTimeout> | undefined;
@@ -103,20 +103,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    ref="surface"
-    class="model-corruption relative isolate"
-    :data-drift="level"
-    :data-glitch="glitching"
-    :data-broken="broken"
-    :data-meltdown="meltdown"
-    :data-fault="fault"
-    :data-target="target"
-    :style="{ '--drift-shift': `${shift}px` }"
-  >
+  <div ref="surface" class="model-corruption relative isolate" :data-drift="level" :data-glitch="glitching"
+    :data-broken="broken" :data-meltdown="meltdown" :data-fault="fault" :data-target="target"
+    :style="{ '--drift-shift': `${shift}px` }">
     <slot />
     <div class="model-interference pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
-      <span v-for="(band, index) in bands" :key="index" class="model-tear absolute inset-x-0" :style="{ top: `${band.top}%`, height: `${band.height}px`, transform: `translateX(${band.offset}px)` }" />
+      <span v-for="(band, index) in bands" :key="index" class="model-tear absolute inset-x-0"
+        :style="{ top: `${band.top}%`, height: `${band.height}px`, transform: `translateX(${band.offset}px)` }" />
     </div>
   </div>
 </template>
